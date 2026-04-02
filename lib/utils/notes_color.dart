@@ -31,19 +31,27 @@ class NoteColorPreset {
     this.isDynamic = false,
   });
 
-  List<Color> generatePalette(Brightness brightness, {Color? dynamicSeed}) {
+  List<Color> generatePalette(
+    Brightness brightness, {
+    Color? dynamicSeed,
+    Color? surface,
+  }) {
     final seed = (isDynamic && dynamicSeed != null) ? dynamicSeed : seedColor;
     final scheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: brightness,
     );
-    return [
+    final raw = [
       scheme.primaryContainer,
       scheme.secondaryContainer,
       scheme.tertiaryContainer,
       scheme.primaryFixed,
       scheme.secondaryFixed,
     ];
+    if (surface == null) return raw;
+    return raw
+        .map((c) => Color.lerp(c, surface, 0.40)!)
+        .toList();
   }
 }
 
@@ -97,15 +105,32 @@ const List<NoteColorPreset> allNoteColorPresets = [
 ];
 
 class NotesColor extends ChangeNotifier {
+  static const int colorsPerPreset = 5;
+
   static Color getNoteColor({
     required int notIndex,
     required BuildContext context,
     int? fixedColorIndex,
   }) {
+    final cs = Theme.of(context).colorScheme;
     final brightness = Theme.of(context).brightness;
+    final surface = cs.surface;
 
     if (!PreferencesStorage.isColorful && fixedColorIndex == null) {
-      return Theme.of(context).colorScheme.surfaceContainerHigh;
+      return cs.surfaceContainerHigh;
+    }
+
+    // Global fixedColorIndex: decode preset and position within it
+    if (fixedColorIndex != null && fixedColorIndex >= 0) {
+      final presetIdx =
+          (fixedColorIndex ~/ colorsPerPreset).clamp(0, allNoteColorPresets.length - 1);
+      final colorInPreset = fixedColorIndex % colorsPerPreset;
+      final preset = allNoteColorPresets[presetIdx];
+      Color? seed;
+      if (preset.isDynamic) seed = cs.primary;
+      final palette =
+          preset.generatePalette(brightness, dynamicSeed: seed, surface: surface);
+      return palette[colorInPreset % palette.length];
     }
 
     final presetIndex = PreferencesStorage.colorfulNotesColorIndex
@@ -114,20 +139,21 @@ class NotesColor extends ChangeNotifier {
 
     Color? dynamicSeed;
     if (preset.isDynamic) {
-      dynamicSeed = Theme.of(context).colorScheme.primary;
+      dynamicSeed = cs.primary;
     }
 
-    final palette = preset.generatePalette(brightness, dynamicSeed: dynamicSeed);
-
-    if (fixedColorIndex != null && fixedColorIndex >= 0) {
-      return palette[fixedColorIndex % palette.length];
-    }
+    final palette = preset.generatePalette(
+      brightness,
+      dynamicSeed: dynamicSeed,
+      surface: surface,
+    );
 
     return palette[notIndex % palette.length];
   }
 
-  /// Returns the full palette for the current preset (used in color picker UI).
+  /// Returns the full palette for the current preset.
   static List<Color> getCurrentPalette(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final brightness = Theme.of(context).brightness;
     final presetIndex = PreferencesStorage.colorfulNotesColorIndex
         .clamp(0, allNoteColorPresets.length - 1);
@@ -135,10 +161,29 @@ class NotesColor extends ChangeNotifier {
 
     Color? dynamicSeed;
     if (preset.isDynamic) {
-      dynamicSeed = Theme.of(context).colorScheme.primary;
+      dynamicSeed = cs.primary;
     }
 
-    return preset.generatePalette(brightness, dynamicSeed: dynamicSeed);
+    return preset.generatePalette(
+      brightness,
+      dynamicSeed: dynamicSeed,
+      surface: cs.surface,
+    );
+  }
+
+  /// Returns all palette colors from every preset, used in the full color picker.
+  static List<Color> getAllPaletteColors(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final brightness = Theme.of(context).brightness;
+    final colors = <Color>[];
+    for (final preset in allNoteColorPresets) {
+      Color? seed;
+      if (preset.isDynamic) seed = cs.primary;
+      colors.addAll(
+        preset.generatePalette(brightness, dynamicSeed: seed, surface: cs.surface),
+      );
+    }
+    return colors;
   }
 
   void toggleColor() {

@@ -20,54 +20,102 @@ import 'package:easy_localization/easy_localization.dart';
 // Project imports:
 import 'package:safenotes/utils/notes_color.dart';
 
-/// Returns the selected color index, or -1 for "default (follow preset)", or null if dismissed.
+/// Returns the selected global color index, or -1 for "default (follow preset)", or null if dismissed.
 Future<int?> showNoteColorPicker(BuildContext context) {
   return showModalBottomSheet<int>(
     context: context,
-    builder: (ctx) => _NoteColorPickerSheet(),
+    isScrollControlled: true,
+    builder: (ctx) => DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.3,
+      maxChildSize: 0.85,
+      expand: false,
+      builder: (context, scrollController) =>
+          _NoteColorPickerSheet(scrollController: scrollController),
+    ),
   );
 }
 
 class _NoteColorPickerSheet extends StatelessWidget {
+  final ScrollController scrollController;
+
+  const _NoteColorPickerSheet({required this.scrollController});
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final palette = NotesColor.getCurrentPalette(context);
+    final brightness = Theme.of(context).brightness;
+    final surface = cs.surface;
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Choose Color'.tr(),
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 20),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  'Choose Color'.tr(),
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
                 _buildColorCircle(
                   context: context,
                   color: cs.surfaceContainerHigh,
                   index: -1,
                   label: 'Default'.tr(),
                 ),
-                ...List.generate(palette.length, (i) {
-                  return _buildColorCircle(
-                    context: context,
-                    color: palette[i],
-                    index: i,
-                  );
-                }),
               ],
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
+          ),
+          const Divider(),
+          Expanded(
+            child: ListView.builder(
+              controller: scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              itemCount: allNoteColorPresets.length,
+              itemBuilder: (context, presetIdx) {
+                final preset = allNoteColorPresets[presetIdx];
+                Color? seed;
+                if (preset.isDynamic) seed = cs.primary;
+                final palette = preset.generatePalette(
+                  brightness,
+                  dynamicSeed: seed,
+                  surface: surface,
+                );
+                final globalOffset = presetIdx * NotesColor.colorsPerPreset;
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        preset.name.tr(),
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: List.generate(palette.length, (i) {
+                          return _buildColorCircle(
+                            context: context,
+                            color: palette[i],
+                            index: globalOffset + i,
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

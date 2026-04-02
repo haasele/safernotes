@@ -21,7 +21,6 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:local_session_timeout/local_session_timeout.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/provider.dart';
 
 // Project imports:
@@ -40,6 +39,14 @@ import 'package:safenotes/widgets/note_tile.dart';
 import 'package:safenotes/widgets/note_tile_compact.dart';
 import 'package:safenotes/widgets/search_widget.dart';
 
+enum NoteSortMode {
+  defaultView,
+  createdDesc,
+  createdAsc,
+  modifiedDesc,
+  modifiedAsc,
+}
+
 class HomePage extends StatefulWidget {
   final StreamController<SessionState> sessionStateStream;
 
@@ -56,12 +63,15 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool isLoading = false;
   String query = '';
   bool isHiddenImport = true;
-  bool isNewFirst = PreferencesStorage.isNewFirst;
   bool isGridView = PreferencesStorage.isGridView;
   final importPassphraseController = TextEditingController();
 
   bool _isSelectionMode = false;
   final Set<int> _selectedNoteIds = {};
+
+  NoteSortMode _sortMode = NoteSortMode.values[
+    PreferencesStorage.sortMode.clamp(0, NoteSortMode.values.length - 1)
+  ];
 
   @override
   void initState() {
@@ -76,17 +86,50 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<void> _sortAndStoreNotes() async {
-    List<SafeNote> tmpNotes;
-    if (isNewFirst) {
-      tmpNotes = await NotesDatabase.instance.decryptReadAllNotes()
-        ..sort((a, b) => b.createdTime.compareTo(a.createdTime));
-    } else {
-      tmpNotes = await NotesDatabase.instance.decryptReadAllNotes()
-        ..sort((a, b) => a.createdTime.compareTo(b.createdTime));
-    }
+    final tmpNotes = await NotesDatabase.instance.decryptReadAllNotes();
+    _applySortMode(tmpNotes);
     setState(() {
       allnotes = notes = tmpNotes;
     });
+  }
+
+  void _applySortMode(List<SafeNote> list) {
+    switch (_sortMode) {
+      case NoteSortMode.defaultView:
+        list.sort((a, b) {
+          final aOrder = a.sortOrder ?? 999999;
+          final bOrder = b.sortOrder ?? 999999;
+          if (aOrder != bOrder) return aOrder.compareTo(bOrder);
+          return b.createdTime.compareTo(a.createdTime);
+        });
+        break;
+      case NoteSortMode.createdDesc:
+        list.sort((a, b) => b.createdTime.compareTo(a.createdTime));
+        break;
+      case NoteSortMode.createdAsc:
+        list.sort((a, b) => a.createdTime.compareTo(b.createdTime));
+        break;
+      case NoteSortMode.modifiedDesc:
+        list.sort((a, b) {
+          final aMod = a.modifiedTime ?? a.createdTime;
+          final bMod = b.modifiedTime ?? b.createdTime;
+          return bMod.compareTo(aMod);
+        });
+        break;
+      case NoteSortMode.modifiedAsc:
+        list.sort((a, b) {
+          final aMod = a.modifiedTime ?? a.createdTime;
+          final bMod = b.modifiedTime ?? b.createdTime;
+          return aMod.compareTo(bMod);
+        });
+        break;
+    }
+  }
+
+  void _setSortMode(NoteSortMode mode) {
+    setState(() => _sortMode = mode);
+    PreferencesStorage.setSortMode(mode.index);
+    _sortAndStoreNotes();
   }
 
   void _exitSelectionMode() {
@@ -166,7 +209,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     await refreshNotes();
   }
 
-  void _onNoteTap(SafeNote note) async {
+  void _onNoteTap(SafeNote note, int index) async {
     if (_isSelectionMode) {
       _toggleSelection(note);
       return;
@@ -177,6 +220,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       arguments: NoteDetailPageArguments(
         note: note,
         sessionStream: widget.sessionStateStream,
+        noteIndex: index,
       ),
     );
     refreshNotes();
@@ -187,6 +231,27 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       _enterSelectionMode(note);
     } else {
       _toggleSelection(note);
+    }
+  }
+
+  Future<void> _onReorder(int oldIndex, int newIndex) async {
+    if (oldIndex == newIndex) return;
+    setState(() {
+      final item = notes.removeAt(oldIndex);
+      notes.insert(newIndex, item);
+      allnotes = List.from(notes);
+    });
+
+    final idToOrder = <int, int>{};
+    for (var i = 0; i < notes.length; i++) {
+      final id = notes[i].id;
+      if (id != null) idToOrder[id] = i;
+    }
+    await NotesDatabase.instance.updateSortOrder(idToOrder);
+
+    if (_sortMode != NoteSortMode.defaultView) {
+      _sortMode = NoteSortMode.defaultView;
+      PreferencesStorage.setSortMode(NoteSortMode.defaultView.index);
     }
   }
 
@@ -225,7 +290,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ? null
           : [
               _gridListView(),
-              _shortNotes(),
+              _buildSortButton(),
             ],
     );
   }
@@ -273,17 +338,49 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _shortNotes() {
-    return IconButton(
-      icon: !isNewFirst
-          ? Icon(MdiIcons.sortCalendarAscending)
-          : Icon(MdiIcons.sortCalendarDescending),
-      onPressed: () {
-        setState(() {
-          isNewFirst = !isNewFirst;
-          _sortAndStoreNotes();
-        });
-      },
+  Widget _buildSortButton() {
+    return PopupMenuButton<NoteSortMode>(
+      icon: const Icon(Icons.sort),
+      tooltip: 'Sort'.tr(),
+      onSelected: _setSortMode,
+      itemBuilder: (context) => [
+        _sortMenuItem(NoteSortMode.defaultView, 'Default view'.tr(), Icons.dashboard_outlined),
+        const PopupMenuDivider(),
+        _sortMenuItem(NoteSortMode.createdDesc, 'Created: Newest first'.tr(), Icons.arrow_downward),
+        _sortMenuItem(NoteSortMode.createdAsc, 'Created: Oldest first'.tr(), Icons.arrow_upward),
+        const PopupMenuDivider(),
+        _sortMenuItem(NoteSortMode.modifiedDesc, 'Modified: Newest first'.tr(), Icons.arrow_downward),
+        _sortMenuItem(NoteSortMode.modifiedAsc, 'Modified: Oldest first'.tr(), Icons.arrow_upward),
+      ],
+    );
+  }
+
+  PopupMenuItem<NoteSortMode> _sortMenuItem(
+    NoteSortMode mode,
+    String label,
+    IconData icon,
+  ) {
+    final isActive = _sortMode == mode;
+    final cs = Theme.of(context).colorScheme;
+    return PopupMenuItem<NoteSortMode>(
+      value: mode,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: isActive ? cs.primary : cs.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isActive ? cs.primary : null,
+                fontWeight: isActive ? FontWeight.bold : null,
+              ),
+            ),
+          ),
+          if (isActive)
+            Icon(Icons.check, size: 18, color: cs.primary),
+        ],
+      ),
     );
   }
 
@@ -382,26 +479,39 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildNotesTile({Key? key}) {
-    return ListView.separated(
+    return ReorderableListView.builder(
       key: key,
       padding: const EdgeInsets.all(15),
       itemCount: notes.length,
-      itemBuilder: ((context, index) {
+      onReorder: (oldIndex, newIndex) {
+        if (newIndex > oldIndex) newIndex--;
+        _onReorder(oldIndex, newIndex);
+      },
+      proxyDecorator: (child, index, animation) {
+        return Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.transparent,
+          child: child,
+        );
+      },
+      itemBuilder: (context, index) {
         final note = notes[index];
         final isSelected = _selectedNoteIds.contains(note.id);
         return InkWell(
+          key: ValueKey(note.id),
           borderRadius: BorderRadius.circular(12),
-          onTap: () => _onNoteTap(note),
+          onTap: () => _onNoteTap(note, index),
           onLongPress: () => _onNoteLongPress(note),
-          child: PreferencesStorage.isCompactPreview
-              ? NoteTileWidgetCompact(
-                  note: note, index: index, isSelected: isSelected)
-              : NoteTileWidget(
-                  note: note, index: index, isSelected: isSelected),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 7),
+            child: PreferencesStorage.isCompactPreview
+                ? NoteTileWidgetCompact(
+                    note: note, index: index, isSelected: isSelected)
+                : NoteTileWidget(
+                    note: note, index: index, isSelected: isSelected),
+          ),
         );
-      }),
-      separatorBuilder: (BuildContext context, int index) {
-        return const SizedBox(height: 7);
       },
     );
   }
@@ -420,15 +530,49 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           itemBuilder: (context, index) {
             final note = notes[index];
             final isSelected = _selectedNoteIds.contains(note.id);
-            return InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => _onNoteTap(note),
-              onLongPress: () => _onNoteLongPress(note),
-              child: PreferencesStorage.isCompactPreview
-                  ? NoteCardWidgetCompact(
-                      note: note, index: index, isSelected: isSelected)
-                  : NoteCardWidget(
-                      note: note, index: index, isSelected: isSelected),
+            return LongPressDraggable<int>(
+              data: index,
+              feedback: Material(
+                elevation: 6,
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: (constraints.maxWidth - 24) / crossAxisCount - 4,
+                  child: Opacity(
+                    opacity: 0.85,
+                    child: PreferencesStorage.isCompactPreview
+                        ? NoteCardWidgetCompact(
+                            note: note, index: index, isSelected: false)
+                        : NoteCardWidget(
+                            note: note, index: index, isSelected: false),
+                  ),
+                ),
+              ),
+              childWhenDragging: Opacity(
+                opacity: 0.3,
+                child: PreferencesStorage.isCompactPreview
+                    ? NoteCardWidgetCompact(
+                        note: note, index: index, isSelected: isSelected)
+                    : NoteCardWidget(
+                        note: note, index: index, isSelected: isSelected),
+              ),
+              onDragCompleted: () {},
+              child: DragTarget<int>(
+                onAcceptWithDetails: (details) {
+                  _onReorder(details.data, index);
+                },
+                builder: (context, candidateData, rejectedData) {
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _onNoteTap(note, index),
+                    onLongPress: () => _onNoteLongPress(note),
+                    child: PreferencesStorage.isCompactPreview
+                        ? NoteCardWidgetCompact(
+                            note: note, index: index, isSelected: isSelected)
+                        : NoteCardWidget(
+                            note: note, index: index, isSelected: isSelected),
+                  );
+                },
+              ),
             );
           },
         );

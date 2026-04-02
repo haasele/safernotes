@@ -23,14 +23,20 @@ import 'package:local_session_timeout/local_session_timeout.dart';
 // Project imports:
 import 'package:safenotes/models/editor_state.dart';
 import 'package:safenotes/models/safenote.dart';
+import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/widgets/note_widget.dart';
 
 class AddEditNotePage extends StatefulWidget {
   final StreamController<SessionState> sessionStateStream;
   final SafeNote? note;
+  final int noteIndex;
 
-  const AddEditNotePage({Key? key, this.note, required this.sessionStateStream})
-    : super(key: key);
+  const AddEditNotePage({
+    Key? key,
+    this.note,
+    required this.sessionStateStream,
+    this.noteIndex = 0,
+  }) : super(key: key);
 
   @override
   AddEditNotePageState createState() => AddEditNotePageState();
@@ -52,9 +58,19 @@ class AddEditNotePageState extends State<AddEditNotePage> {
     NoteEditorState.setSaveAttempted(false);
   }
 
+  Color? _noteColor(BuildContext context) {
+    if (widget.note == null) return null;
+    return NotesColor.getNoteColor(
+      notIndex: widget.noteIndex,
+      context: context,
+      fixedColorIndex: widget.note?.colorIndex,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final bg = _noteColor(context);
 
     return PopScope(
       canPop: true,
@@ -66,8 +82,12 @@ class AddEditNotePageState extends State<AddEditNotePage> {
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
+          backgroundColor: bg,
           resizeToAvoidBottomInset: false,
-          appBar: AppBar(actions: [buildButton()]),
+          appBar: AppBar(
+            backgroundColor: bg ?? Theme.of(context).appBarTheme.backgroundColor,
+            actions: [buildButton()],
+          ),
           body: SingleChildScrollView(
             reverse: true,
             child: Padding(

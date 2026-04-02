@@ -26,15 +26,18 @@ import 'package:safenotes/data/database_handler.dart';
 import 'package:safenotes/dialogs/delete_confirmation.dart';
 import 'package:safenotes/models/safenote.dart';
 import 'package:safenotes/routes/route_generator.dart';
+import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/utils/text_direction_util.dart';
 
 class NoteDetailPage extends StatefulWidget {
   final int noteId;
+  final int noteIndex;
   final StreamController<SessionState> sessionStateStream;
 
   const NoteDetailPage({
     Key? key,
     required this.noteId,
+    this.noteIndex = 0,
     required this.sessionStateStream,
   }) : super(key: key);
 
@@ -59,13 +62,28 @@ class NoteDetailPageState extends State<NoteDetailPage> {
     setState(() => isLoading = false);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: _appBar(context), body: _body(context));
+  Color? _noteColor(BuildContext context) {
+    if (isLoading) return null;
+    return NotesColor.getNoteColor(
+      notIndex: widget.noteIndex,
+      context: context,
+      fixedColorIndex: note.colorIndex,
+    );
   }
 
-  PreferredSizeWidget _appBar(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
+    final bg = _noteColor(context);
+    return Scaffold(
+      backgroundColor: bg,
+      appBar: _appBar(context, bg),
+      body: _body(context),
+    );
+  }
+
+  PreferredSizeWidget _appBar(BuildContext context, Color? bg) {
     return AppBar(
+      backgroundColor: bg ?? Theme.of(context).appBarTheme.backgroundColor,
       title: isLoading ? Text('Loading...'.tr()) : null,
       actions: isLoading ? null : [editButton(), deleteButton()],
     );
@@ -115,6 +133,7 @@ class NoteDetailPageState extends State<NoteDetailPage> {
           arguments: AddEditNoteArguments(
             sessionStream: widget.sessionStateStream,
             note: note,
+            noteIndex: widget.noteIndex,
           ),
         );
         refreshNote();

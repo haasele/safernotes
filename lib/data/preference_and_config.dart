@@ -51,6 +51,7 @@ class PreferencesStorage {
   static const _keyIsSystemDarkLightSwitchEnabled =
       'isSystemDarkLightSwitchEnabled';
   static const _keyThemeFlavor = 'themeFlavor';
+  static const _keySortMode = 'sortMode';
 
   static Future init() async =>
       _preferences = await SharedPreferences.getInstance();
@@ -112,6 +113,12 @@ class PreferencesStorage {
 
   static Future<void> setIsNewFirst(bool flag) async =>
       await _preferences?.setBool(_keyIsNewFirst, flag);
+
+  // 0=defaultView, 1=createdDesc, 2=createdAsc, 3=modifiedDesc, 4=modifiedAsc
+  static int get sortMode => _preferences?.getInt(_keySortMode) ?? 0;
+
+  static Future<void> setSortMode(int mode) async =>
+      await _preferences?.setInt(_keySortMode, mode);
 
   static String get lastBackupTime =>
       _preferences?.getString(_keyLastBackupTime) ?? '';
