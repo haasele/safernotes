@@ -20,22 +20,26 @@ import 'package:flutter/material.dart';
 // Package imports:
 import 'package:easy_localization/easy_localization.dart';
 import 'package:local_session_timeout/local_session_timeout.dart';
+
 // Project imports:
 import 'package:safenotes/models/editor_state.dart';
 import 'package:safenotes/models/safenote.dart';
 import 'package:safenotes/utils/notes_color.dart';
+import 'package:safenotes/widgets/markdown_editor.dart';
 import 'package:safenotes/widgets/note_widget.dart';
 
 class AddEditNotePage extends StatefulWidget {
   final StreamController<SessionState> sessionStateStream;
   final SafeNote? note;
   final int noteIndex;
+  final String noteType;
 
   const AddEditNotePage({
     Key? key,
     this.note,
     required this.sessionStateStream,
     this.noteIndex = 0,
+    this.noteType = 'text',
   }) : super(key: key);
 
   @override
@@ -44,15 +48,18 @@ class AddEditNotePage extends StatefulWidget {
 
 class AddEditNotePageState extends State<AddEditNotePage> {
   final _formKey = GlobalKey<FormState>();
+  final _editorKey = GlobalKey<MarkdownNoteEditorState>();
 
   late String title;
   late String description;
+  late String contentFormat;
 
   @override
   void initState() {
     super.initState();
     title = widget.note?.title ?? '';
     description = widget.note?.description ?? '';
+    contentFormat = widget.note?.contentFormat ?? 'plain';
     title = title == ' ' ? '' : title;
     description = description == ' ' ? '' : description;
     NoteEditorState.setSaveAttempted(false);
@@ -69,7 +76,6 @@ class AddEditNotePageState extends State<AddEditNotePage> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
     final bg = _noteColor(context);
 
     return PopScope(
@@ -83,18 +89,12 @@ class AddEditNotePageState extends State<AddEditNotePage> {
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
           backgroundColor: bg,
-          resizeToAvoidBottomInset: false,
+          resizeToAvoidBottomInset: true,
           appBar: AppBar(
             backgroundColor: bg ?? Theme.of(context).appBarTheme.backgroundColor,
             actions: [buildButton()],
           ),
-          body: SingleChildScrollView(
-            reverse: true,
-            child: Padding(
-              padding: EdgeInsets.only(bottom: bottom),
-              child: _buildBody(),
-            ),
-          ),
+          body: _buildBody(),
         ),
       ),
     );
@@ -106,14 +106,25 @@ class AddEditNotePageState extends State<AddEditNotePage> {
       child: NoteFormWidget(
         title: title,
         description: description,
+        contentFormat: contentFormat,
         sessionStateStream: widget.sessionStateStream,
+        editorKey: _editorKey,
         onChangedTitle: (title) => setState(() {
           this.title = title;
-          NoteEditorState.setState(widget.note, this.title, description);
+          NoteEditorState.setState(
+            widget.note, this.title, description,
+            contentFormat: 'document',
+            noteType: widget.note?.noteType ?? widget.noteType,
+          );
         }),
         onChangedDescription: (description) => setState(() {
           this.description = description;
-          NoteEditorState.setState(widget.note, title, this.description);
+          contentFormat = 'document';
+          NoteEditorState.setState(
+            widget.note, title, this.description,
+            contentFormat: 'document',
+            noteType: widget.note?.noteType ?? widget.noteType,
+          );
         }),
       ),
     );
@@ -144,19 +155,15 @@ class AddEditNotePageState extends State<AddEditNotePage> {
   }
 
   Future<void> onSaveCallback() async {
-    // TODO: refactor without using BuildContexts across async gap
     var navigator = Navigator.of(context);
-    await NoteEditorState()
-        .addOrUpdateNote(); // this will also set NoteEditorState.setSaveAttempted = true
+    await NoteEditorState().addOrUpdateNote();
     navigator.pop();
   }
 
   bool isNoteNewOrContentChanged() {
     if (widget.note == null) {
-      //New Note and content is not empty
       if (title.isNotEmpty || description.isNotEmpty) return true;
     } else {
-      // Old Note but content is changed
       if (widget.note?.title != title && title != '' ||
           widget.note?.description != description && description != '') {
         return true;

@@ -20,6 +20,7 @@ import 'package:sqflite/sqflite.dart';
 
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
+import 'package:safenotes/models/attachment.dart';
 import 'package:safenotes/models/safenote.dart';
 
 class NotesDatabase {
@@ -42,7 +43,7 @@ class NotesDatabase {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -60,7 +61,22 @@ class NotesDatabase {
   ${NoteFields.time} $textType,
   ${NoteFields.colorIndex} INTEGER,
   ${NoteFields.modifiedTime} TEXT,
-  ${NoteFields.sortOrder} INTEGER
+  ${NoteFields.sortOrder} INTEGER,
+  ${NoteFields.noteType} TEXT DEFAULT 'text',
+  ${NoteFields.contentFormat} TEXT DEFAULT 'plain'
+  )
+  ''');
+
+    await db.execute('''
+  CREATE TABLE $tableAttachments (
+  ${AttachmentFields.id} $idType,
+  ${AttachmentFields.noteId} INTEGER NOT NULL,
+  ${AttachmentFields.fileName} $textType,
+  ${AttachmentFields.storagePath} $textType,
+  ${AttachmentFields.mimeType} TEXT,
+  ${AttachmentFields.fileSize} INTEGER,
+  ${AttachmentFields.createdTime} $textType,
+  FOREIGN KEY (${AttachmentFields.noteId}) REFERENCES $tableNotes(${NoteFields.id}) ON DELETE CASCADE
   )
   ''');
   }
@@ -78,10 +94,29 @@ class NotesDatabase {
       await db.execute(
         'ALTER TABLE $tableNotes ADD COLUMN ${NoteFields.sortOrder} INTEGER',
       );
-      // Backfill modifiedTime with createdTime for existing rows
       await db.execute(
         'UPDATE $tableNotes SET ${NoteFields.modifiedTime} = ${NoteFields.time} WHERE ${NoteFields.modifiedTime} IS NULL',
       );
+    }
+    if (oldVersion < 4) {
+      await db.execute(
+        "ALTER TABLE $tableNotes ADD COLUMN ${NoteFields.noteType} TEXT DEFAULT 'text'",
+      );
+      await db.execute(
+        "ALTER TABLE $tableNotes ADD COLUMN ${NoteFields.contentFormat} TEXT DEFAULT 'plain'",
+      );
+      await db.execute('''
+  CREATE TABLE IF NOT EXISTS $tableAttachments (
+  ${AttachmentFields.id} INTEGER PRIMARY KEY AUTOINCREMENT,
+  ${AttachmentFields.noteId} INTEGER NOT NULL,
+  ${AttachmentFields.fileName} TEXT NOT NULL,
+  ${AttachmentFields.storagePath} TEXT NOT NULL,
+  ${AttachmentFields.mimeType} TEXT,
+  ${AttachmentFields.fileSize} INTEGER,
+  ${AttachmentFields.createdTime} TEXT NOT NULL,
+  FOREIGN KEY (${AttachmentFields.noteId}) REFERENCES $tableNotes(${NoteFields.id}) ON DELETE CASCADE
+  )
+  ''');
     }
   }
 
@@ -200,6 +235,42 @@ class NotesDatabase {
       );
     }
     await batch.commit(noResult: true);
+  }
+
+  // Attachment CRUD
+
+  Future<NoteAttachment> insertAttachment(NoteAttachment attachment) async {
+    final db = await instance.database;
+    final id = await db.insert(tableAttachments, attachment.toMap());
+    return attachment.copy(id: id);
+  }
+
+  Future<List<NoteAttachment>> getAttachmentsForNote(int noteId) async {
+    final db = await instance.database;
+    final result = await db.query(
+      tableAttachments,
+      where: '${AttachmentFields.noteId} = ?',
+      whereArgs: [noteId],
+    );
+    return result.map((map) => NoteAttachment.fromMap(map)).toList();
+  }
+
+  Future<int> deleteAttachment(int attachmentId) async {
+    final db = await instance.database;
+    return await db.delete(
+      tableAttachments,
+      where: '${AttachmentFields.id} = ?',
+      whereArgs: [attachmentId],
+    );
+  }
+
+  Future<int> deleteAttachmentsForNote(int noteId) async {
+    final db = await instance.database;
+    return await db.delete(
+      tableAttachments,
+      where: '${AttachmentFields.noteId} = ?',
+      whereArgs: [noteId],
+    );
   }
 
   Future close() async {

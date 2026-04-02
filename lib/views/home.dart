@@ -31,6 +31,7 @@ import 'package:safenotes/models/safenote.dart';
 import 'package:safenotes/models/session.dart';
 import 'package:safenotes/routes/route_generator.dart';
 import 'package:safenotes/utils/notes_color.dart';
+import 'package:safenotes/widgets/advanced_fab.dart';
 import 'package:safenotes/widgets/drawer.dart';
 import 'package:safenotes/widgets/note_card.dart';
 import 'package:safenotes/widgets/note_card_compact.dart';
@@ -408,16 +409,64 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _addANewNoteButton(BuildContext context) {
-    return FloatingActionButton(
-      child: const Icon(Icons.add),
-      onPressed: () async {
-        await Navigator.pushNamed(
-          context,
-          '/addnote',
-          arguments: widget.sessionStateStream,
-        );
-        refreshNotes();
-      },
+    return ExpandableFab(
+      options: buildNoteCreationOptions(
+        onText: () async {
+          await Navigator.pushNamed(
+            context,
+            '/addnote',
+            arguments: AddNoteArguments(
+              sessionStream: widget.sessionStateStream,
+              noteType: 'text',
+            ),
+          );
+          refreshNotes();
+        },
+        onAudio: () async {
+          await Navigator.pushNamed(
+            context,
+            '/addnote',
+            arguments: AddNoteArguments(
+              sessionStream: widget.sessionStateStream,
+              noteType: 'audio',
+            ),
+          );
+          refreshNotes();
+        },
+        onImage: () async {
+          await Navigator.pushNamed(
+            context,
+            '/addnote',
+            arguments: AddNoteArguments(
+              sessionStream: widget.sessionStateStream,
+              noteType: 'image',
+            ),
+          );
+          refreshNotes();
+        },
+        onDrawing: () async {
+          await Navigator.pushNamed(
+            context,
+            '/addnote',
+            arguments: AddNoteArguments(
+              sessionStream: widget.sessionStateStream,
+              noteType: 'drawing',
+            ),
+          );
+          refreshNotes();
+        },
+        onChecklist: () async {
+          await Navigator.pushNamed(
+            context,
+            '/addnote',
+            arguments: AddNoteArguments(
+              sessionStream: widget.sessionStateStream,
+              noteType: 'checklist',
+            ),
+          );
+          refreshNotes();
+        },
+      ),
     );
   }
 

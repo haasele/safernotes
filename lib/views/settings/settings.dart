@@ -145,6 +145,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         SettingsSection(
+          title: Text('Editor'.tr()),
+          tiles: <SettingsTile>[
+            SettingsTile.switchTile(
+              leading: const Icon(Icons.link),
+              title: Text('Rich Link Preview'.tr()),
+              initialValue: PreferencesStorage.isRichLinkPreview,
+              onToggle: (bool value) {
+                PreferencesStorage.setIsRichLinkPreview(value);
+                setState(() {});
+              },
+            ),
+          ],
+        ),
+        SettingsSection(
           title: Text('Security'.tr()),
           tiles: <SettingsTile>[
             SettingsTile.navigation(

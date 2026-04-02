@@ -24,41 +24,52 @@ import 'package:local_session_timeout/local_session_timeout.dart';
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/utils/text_direction_util.dart';
+import 'package:safenotes/widgets/markdown_editor.dart';
 
 class NoteFormWidget extends StatelessWidget {
   final StreamController<SessionState> sessionStateStream;
 
   final String? title;
   final String? description;
+  final String contentFormat;
   final ValueChanged<String> onChangedTitle;
   final ValueChanged<String> onChangedDescription;
+
+  final GlobalKey<MarkdownNoteEditorState>? editorKey;
 
   const NoteFormWidget({
     Key? key,
     this.title = '',
     this.description = '',
+    this.contentFormat = 'plain',
     required this.onChangedTitle,
     required this.onChangedDescription,
     required this.sessionStateStream,
+    this.editorKey,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     const double allSidePadding = 16.0;
 
-    return SingleChildScrollView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      child: Padding(
-        padding: const EdgeInsets.all(allSidePadding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTitle(),
-            const SizedBox(height: 2),
-            buildDescription(context),
-            const SizedBox(height: 16),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.all(allSidePadding),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildTitle(),
+          const Divider(height: 1),
+          const SizedBox(height: 8),
+          Expanded(
+            child: MarkdownNoteEditor(
+              key: editorKey,
+              initialContent: description ?? '',
+              contentFormat: contentFormat,
+              readOnly: false,
+              onChanged: onChangedDescription,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -67,7 +78,6 @@ class NoteFormWidget extends StatelessWidget {
     const double fontSize = 24.0;
     const int maxLinesToShowAtTimeTitle = 2;
     final String titleHint = 'Title'.tr();
-    //Disable IMEPL if keyboard incognito mode is true
     final bool enableIMEPLFlag = !PreferencesStorage.keyboardIncognito;
 
     return TextFormField(
@@ -77,10 +87,6 @@ class NoteFormWidget extends StatelessWidget {
       textDirection: getTextDirecton(title!),
       initialValue: title,
       enableInteractiveSelection: true,
-      // contextMenuBuilder: (context, editableTextState) {
-      // Use contextMenuBuilder to control which text selection toolbar are enabled
-      // https://docs.flutter.dev/release/breaking-changes/context-menus#migration-guide
-      // },
       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize),
       decoration: InputDecoration(
         border: InputBorder.none,
@@ -89,62 +95,4 @@ class NoteFormWidget extends StatelessWidget {
       onChanged: onChangedTitle,
     );
   }
-
-  Widget buildDescription(BuildContext context) {
-    // maxLine is used in resizing description field on keyboard activation or dismissal
-    // final int maxLinesToShowAtTimeDescription =
-    //     computeMaxLine(context: context, fontHeight: 30.0);
-    const double fontSize = 18.0;
-    final String hintDescription = 'Type something...'.tr();
-    final bool enableIMEPLFlag = !PreferencesStorage.keyboardIncognito;
-
-    return TextFormField(
-      enableIMEPersonalizedLearning: enableIMEPLFlag,
-      //maxLines: maxLinesToShowAtTimeDescription,
-      maxLines: null,
-      initialValue: description,
-      textDirection: getTextDirecton(description!),
-      enableInteractiveSelection: true,
-      // contextMenuBuilder: (context, editableTextState) {
-      // Use contextMenuBuilder to control which text selection toolbar are enabled
-      // https://docs.flutter.dev/release/breaking-changes/context-menus#migration-guide
-      // },
-      style: const TextStyle(fontSize: fontSize),
-      decoration: InputDecoration(
-        border: InputBorder.none,
-        hintText: hintDescription,
-        //hintStyle: TextStyle(color: Colors.white60),
-      ),
-      onChanged: onChangedDescription,
-    );
-  }
-
-  // int computeMaxLine(
-  //     {required BuildContext context, required double fontHeight}) {
-  //   final double totalHeight = MediaQuery.of(context).size.height;
-  //   final EdgeInsets paddingInsets = MediaQuery.of(context).padding;
-  //   final double keyboard = MediaQuery.of(context).viewInsets.bottom;
-  //   final double padding = paddingInsets.top + paddingInsets.bottom;
-
-  //   double totalHeightRatio = (totalHeight - padding) / 100;
-  //   double fontHeightRatio = fontHeight / 100;
-  //   double theXfactor = totalHeightRatio / 3.2;
-  //   /*
-  //   When Keyboard is on screen:-
-  //   Theoretical Ratios for top:description:keyboard
-  //   theoreticalTitleNTopHeightRatio = x*(3.2-1.6);
-  //   theoreticalDescriptinHeightRatio = x*1.6;
-  //   theoreticalKeyboardHeightRatio = x;
-  //   x + x*1.2 + x = totalHeightRatio (i.e total height of screen)
-
-  //   From above:
-  //   if keyboard is on-screen:
-  //     theoreticalDescriptinHeightRatio = x*1.6
-  //   if keyboard not on screen:
-  //     theoreticalDescriptinHeightRatio = x*2.6 (keyboard space is taken by description)
-  //   */
-  //   double descriptionRatio = theXfactor * 2.6;
-  //   if (keyboard > 0) descriptionRatio = theXfactor * 1.4;
-  //   return (descriptionRatio / fontHeightRatio).round();
-  // }
 }

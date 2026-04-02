@@ -22,28 +22,36 @@ class NoteEditorState {
   static SafeNote? original;
   static String title = '';
   static String description = '';
+  static String contentFormat = 'plain';
+  static String noteType = 'text';
 
   static bool wasNoteSaveAttempted = false;
   static setSaveAttempted(bool flag) => wasNoteSaveAttempted = flag;
 
-  // to be called everytime content of note in editor is changes
-  static setState(SafeNote? note, String titleNew, String descriptionNew) {
+  static setState(
+    SafeNote? note,
+    String titleNew,
+    String descriptionNew, {
+    String? contentFormat,
+    String? noteType,
+  }) {
     original = note;
     title = titleNew;
     description = descriptionNew;
+    if (contentFormat != null) NoteEditorState.contentFormat = contentFormat;
+    if (noteType != null) NoteEditorState.noteType = noteType;
     wasNoteSaveAttempted = false;
   }
 
   static destroyValue() {
     original = null;
     title = description = '';
+    contentFormat = 'plain';
+    noteType = 'text';
     wasNoteSaveAttempted = false;
   }
 
-  // to be called during inactivity timeOut
   Future<void> handleUngracefulNoteExit() async {
-    // if note content was changed and note editor was closed(due to inactivity)
-    // without user opting for saving or discarding
     if (wasNoteSaveAttempted == false &&
         (title.isNotEmpty || description.isNotEmpty)) {
       await addOrUpdateNote();
@@ -51,9 +59,7 @@ class NoteEditorState {
   }
 
   Future<void> addOrUpdateNote() async {
-    // if atleast one of the field is non empty save note
     if (title.isNotEmpty || description.isNotEmpty) {
-      // fill empty title or description with
       title = title.isEmpty ? ' ' : title;
       description = description.isEmpty ? ' ' : description;
 
@@ -74,6 +80,8 @@ class NoteEditorState {
       title: title,
       description: description,
       createdTime: DateTime.now(),
+      noteType: noteType,
+      contentFormat: contentFormat,
     );
     await NotesDatabase.instance.encryptAndStore(note);
   }
@@ -83,6 +91,8 @@ class NoteEditorState {
       title: title,
       description: description,
       createdTime: DateTime.now(),
+      contentFormat: contentFormat,
+      noteType: noteType.isNotEmpty ? noteType : null,
     );
     await NotesDatabase.instance.encryptAndUpdate(note);
   }

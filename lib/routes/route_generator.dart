@@ -28,10 +28,14 @@ import 'package:safenotes/main.dart';
 import 'package:safenotes/models/safenote.dart';
 import 'package:safenotes/models/session.dart';
 import 'package:safenotes/views/add_edit_note.dart';
+import 'package:safenotes/views/audio_note_editor.dart';
 import 'package:safenotes/views/authentication/login.dart';
 import 'package:safenotes/views/authentication/set_passphrase.dart';
 import 'package:safenotes/views/change_passphrase.dart';
+import 'package:safenotes/views/checklist_editor.dart';
+import 'package:safenotes/views/drawing_editor.dart';
 import 'package:safenotes/views/home.dart';
+import 'package:safenotes/views/image_note_editor.dart';
 import 'package:safenotes/views/note_view.dart';
 import 'package:safenotes/views/settings/autorotate_settings.dart';
 import 'package:safenotes/views/settings/backup_setting.dart';
@@ -134,6 +138,16 @@ class RouteGenerator {
         return _errorRoute(route: routeName, argsType: 'SafeNotes');
 
       case '/addnote':
+        if (args is AddNoteArguments) {
+          return PageTransition(
+            child: _buildEditorForType(
+              args.noteType,
+              args.sessionStream,
+            ),
+            duration: const Duration(milliseconds: transitionDuration),
+            type: transitionType,
+          );
+        }
         if (args is StreamController<SessionState>) {
           return PageTransition(
             child: AddEditNotePage(sessionStateStream: args),
@@ -143,14 +157,16 @@ class RouteGenerator {
         }
         return _errorRoute(
           route: routeName,
-          argsType: 'StreamController<SessionState>',
+          argsType: 'AddNoteArguments',
         );
 
       case '/editnote':
         if (args is AddEditNoteArguments) {
+          final noteType = args.note?.noteType ?? 'text';
           return PageTransition(
-            child: AddEditNotePage(
-              sessionStateStream: args.sessionStream,
+            child: _buildEditorForType(
+              noteType,
+              args.sessionStream,
               note: args.note,
               noteIndex: args.noteIndex,
             ),
@@ -158,7 +174,7 @@ class RouteGenerator {
             type: transitionType,
           );
         }
-        return _errorRoute(route: routeName, argsType: 'SafeNotes');
+        return _errorRoute(route: routeName, argsType: 'AddEditNoteArguments');
 
       case '/backup':
         return PageTransition(
@@ -234,6 +250,44 @@ class RouteGenerator {
     }
   }
 
+  static Widget _buildEditorForType(
+    String noteType,
+    StreamController<SessionState> sessionStream, {
+    SafeNote? note,
+    int noteIndex = 0,
+  }) {
+    switch (noteType) {
+      case 'audio':
+        return AudioNoteEditor(
+          sessionStateStream: sessionStream,
+          note: note,
+        );
+      case 'image':
+        return ImageNoteEditor(
+          sessionStateStream: sessionStream,
+          note: note,
+        );
+      case 'drawing':
+        return DrawingEditor(
+          sessionStateStream: sessionStream,
+          note: note,
+        );
+      case 'checklist':
+        return ChecklistEditor(
+          sessionStateStream: sessionStream,
+          note: note,
+        );
+      case 'text':
+      default:
+        return AddEditNotePage(
+          sessionStateStream: sessionStream,
+          note: note,
+          noteIndex: noteIndex,
+          noteType: noteType,
+        );
+    }
+  }
+
   static Route<dynamic> _errorRoute({
     required String? route,
     String? argsType,
@@ -288,5 +342,15 @@ class NoteDetailPageArguments {
     required this.sessionStream,
     required this.note,
     this.noteIndex = 0,
+  });
+}
+
+class AddNoteArguments {
+  final StreamController<SessionState> sessionStream;
+  final String noteType;
+
+  AddNoteArguments({
+    required this.sessionStream,
+    this.noteType = 'text',
   });
 }

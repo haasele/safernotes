@@ -19,6 +19,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 
 // Project imports:
 import 'package:safenotes/models/safenote.dart';
+import 'package:safenotes/utils/note_type_utils.dart';
 import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/utils/string_utils.dart';
 import 'package:safenotes/utils/text_direction_util.dart';
@@ -61,17 +62,32 @@ class NoteCardWidgetCompact extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.all(10),
-            child: AutoSizeText(
-              sanitize(previewText),
-              textDirection: getTextDirecton(previewText),
-              style: TextStyle(
-                color: fontColor,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-              minFontSize: 15,
-              maxLines: 2,
-              overflow: TextOverflow.clip,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (note.noteType != 'text')
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Icon(
+                      noteTypeIcon(note.noteType),
+                      size: 14,
+                      color: fontColor.withAlpha(180),
+                    ),
+                  ),
+                AutoSizeText(
+                  sanitize(previewText),
+                  textDirection: getTextDirecton(previewText),
+                  style: TextStyle(
+                    color: fontColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  minFontSize: 15,
+                  maxLines: 2,
+                  overflow: TextOverflow.clip,
+                ),
+              ],
             ),
           ),
           if (isSelected)

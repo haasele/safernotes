@@ -20,6 +20,7 @@ const String tableNotes = 'safe_notes';
 class NoteFields {
   static final List<String> values = [
     id, title, description, time, colorIndex, modifiedTime, sortOrder,
+    noteType, contentFormat,
   ];
 
   static const String id = '_id';
@@ -29,6 +30,8 @@ class NoteFields {
   static const String colorIndex = 'colorIndex';
   static const String modifiedTime = 'modifiedTime';
   static const String sortOrder = 'sortOrder';
+  static const String noteType = 'noteType';
+  static const String contentFormat = 'contentFormat';
 }
 
 class SafeNote {
@@ -39,6 +42,8 @@ class SafeNote {
   final int? colorIndex;
   final DateTime? modifiedTime;
   final int? sortOrder;
+  final String noteType;
+  final String contentFormat;
 
   const SafeNote({
     this.id,
@@ -48,6 +53,8 @@ class SafeNote {
     this.colorIndex,
     this.modifiedTime,
     this.sortOrder,
+    this.noteType = 'text',
+    this.contentFormat = 'plain',
   });
 
   SafeNote copy({
@@ -60,6 +67,8 @@ class SafeNote {
     DateTime? modifiedTime,
     int? sortOrder,
     bool clearSortOrder = false,
+    String? noteType,
+    String? contentFormat,
   }) => SafeNote(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -68,6 +77,8 @@ class SafeNote {
     colorIndex: clearColor ? null : (colorIndex ?? this.colorIndex),
     modifiedTime: modifiedTime ?? this.modifiedTime,
     sortOrder: clearSortOrder ? null : (sortOrder ?? this.sortOrder),
+    noteType: noteType ?? this.noteType,
+    contentFormat: contentFormat ?? this.contentFormat,
   );
 
   static SafeNote fromJsonAndDecrypt(Map<String, dynamic> json) {
@@ -86,6 +97,8 @@ class SafeNote {
       colorIndex: json[NoteFields.colorIndex] as int?,
       modifiedTime: modTimeStr != null ? DateTime.parse(modTimeStr) : null,
       sortOrder: json[NoteFields.sortOrder] as int?,
+      noteType: (json[NoteFields.noteType] as String?) ?? 'text',
+      contentFormat: (json[NoteFields.contentFormat] as String?) ?? 'plain',
     );
   }
 
@@ -99,6 +112,8 @@ class SafeNote {
       NoteFields.colorIndex: colorIndex,
       NoteFields.modifiedTime: modifiedTime?.toIso8601String(),
       NoteFields.sortOrder: sortOrder,
+      NoteFields.noteType: noteType,
+      NoteFields.contentFormat: contentFormat,
     };
   }
 
@@ -110,6 +125,8 @@ class SafeNote {
       NoteFields.colorIndex: colorIndex,
       NoteFields.modifiedTime: modifiedTime?.toIso8601String(),
       NoteFields.sortOrder: sortOrder,
+      NoteFields.noteType: noteType,
+      NoteFields.contentFormat: contentFormat,
     };
   }
 
@@ -138,6 +155,13 @@ class SafeNote {
       colorIndex: json[NoteFields.colorIndex] as int?,
       modifiedTime: modTimeStr != null ? DateTime.parse(modTimeStr) : null,
       sortOrder: json[NoteFields.sortOrder] as int?,
+      noteType: (json[NoteFields.noteType] as String?) ?? 'text',
+      contentFormat: (json[NoteFields.contentFormat] as String?) ?? 'plain',
     );
+  }
+
+  String get previewDescription {
+    // Lazy import avoided - caller should use document_utils.extractPreviewText
+    return description;
   }
 }

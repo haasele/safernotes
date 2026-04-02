@@ -20,6 +20,7 @@ import 'package:easy_localization/easy_localization.dart';
 
 // Project imports:
 import 'package:safenotes/models/safenote.dart';
+import 'package:safenotes/utils/note_type_utils.dart';
 import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/utils/string_utils.dart';
 import 'package:safenotes/utils/text_direction_util.dart';
@@ -103,9 +104,42 @@ class NoteTileWidget extends StatelessWidget {
                     color: fontColor,
                   ),
                 ),
+                if (note.noteType != 'text') ...[
+                  const SizedBox.square(dimension: 3),
+                  Row(
+                    children: [
+                      Icon(
+                        noteTypeIcon(note.noteType),
+                        size: 14,
+                        color: fontColor.withAlpha(180),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        noteTypePreviewText(
+                          note.description,
+                          note.noteType,
+                          note.contentFormat,
+                        ),
+                        style: TextStyle(
+                          color: fontColor.withAlpha(180),
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox.square(dimension: 5),
                 AutoSizeText(
-                  sanitize(note.description),
+                  note.noteType == 'text'
+                      ? sanitize(
+                          noteTypePreviewText(
+                            note.description,
+                            note.noteType,
+                            note.contentFormat,
+                          ),
+                        )
+                      : '',
                   textDirection: getTextDirecton(note.description),
                   style:
                       TextStyle(color: fontColor, fontSize: 16, height: 1.2),

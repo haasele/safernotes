@@ -13,6 +13,7 @@
 
 // Dart imports:
 import 'dart:async';
+import 'dart:convert';
 
 // Flutter imports:
 import 'package:flutter/material.dart';
@@ -28,6 +29,9 @@ import 'package:safenotes/models/safenote.dart';
 import 'package:safenotes/routes/route_generator.dart';
 import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/utils/text_direction_util.dart';
+import 'package:safenotes/widgets/attachment_preview.dart';
+import 'package:safenotes/widgets/markdown_editor.dart';
+import 'package:safenotes/models/attachment.dart';
 
 class NoteDetailPage extends StatefulWidget {
   final int noteId;
@@ -52,7 +56,6 @@ class NoteDetailPageState extends State<NoteDetailPage> {
   @override
   void initState() {
     super.initState();
-
     refreshNote();
   }
 
@@ -90,36 +93,143 @@ class NoteDetailPageState extends State<NoteDetailPage> {
   }
 
   Widget _body(BuildContext context) {
-    return isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : Padding(
-            padding: const EdgeInsets.all(12),
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [
-                SelectableText(
-                  note.title,
-                  textDirection: getTextDirecton(note.title),
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10, bottom: 10),
-                  child: Text(
-                    DateFormat.yMMMd().format(note.createdTime),
-                    textDirection: getTextDirecton(note.title),
-                  ),
-                ),
-                SelectableText(
-                  note.description,
-                  textDirection: getTextDirecton(note.description),
-                  style: const TextStyle(fontSize: 18),
-                ),
-              ],
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: SelectableText(
+              note.title,
+              textDirection: getTextDirecton(note.title),
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              DateFormat.yMMMd().format(note.createdTime),
+              textDirection: getTextDirecton(note.title),
+            ),
+          ),
+          const Divider(height: 1),
+          const SizedBox(height: 8),
+          Expanded(
+            child: _buildContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    switch (note.noteType) {
+      case 'audio':
+      case 'image':
+      case 'drawing':
+        return _buildAttachmentContent();
+      case 'checklist':
+        return _buildChecklistContent();
+      case 'text':
+      default:
+        return _buildTextContent();
+    }
+  }
+
+  Widget _buildTextContent() {
+    if (note.contentFormat == 'document') {
+      return MarkdownNoteEditor(
+        initialContent: note.description,
+        contentFormat: note.contentFormat,
+        readOnly: true,
+      );
+    }
+    return ListView(
+      children: [
+        SelectableText(
+          note.description,
+          textDirection: getTextDirecton(note.description),
+          style: const TextStyle(fontSize: 18),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAttachmentContent() {
+    return FutureBuilder<List<NoteAttachment>>(
+      future: NotesDatabase.instance.getAttachmentsForNote(widget.noteId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final attachments = snapshot.data!;
+        if (attachments.isEmpty) {
+          return Center(
+            child: Text(
+              note.description,
+              style: const TextStyle(fontSize: 18),
             ),
           );
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: attachments.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (_, i) => buildAttachmentPreview(attachments[i]),
+        );
+      },
+    );
+  }
+
+  Widget _buildChecklistContent() {
+    List<Map<String, dynamic>> items;
+    try {
+      final list = jsonDecode(note.description) as List;
+      items = list
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (_) {
+      items = [];
+    }
+
+    if (items.isEmpty) {
+      return Center(
+        child: Text(note.description, style: const TextStyle(fontSize: 18)),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: items.length,
+      itemBuilder: (_, i) {
+        final item = items[i];
+        final checked = item['checked'] as bool? ?? false;
+        final text = item['text'] as String? ?? '';
+        final cs = Theme.of(context).colorScheme;
+
+        return ListTile(
+          leading: Icon(
+            checked ? Icons.check_box : Icons.check_box_outline_blank,
+            color: checked ? cs.primary : cs.outline,
+          ),
+          title: Text(
+            text,
+            style: TextStyle(
+              fontSize: 16,
+              decoration: checked ? TextDecoration.lineThrough : null,
+              color: checked ? cs.outline : cs.onSurface,
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget editButton() {

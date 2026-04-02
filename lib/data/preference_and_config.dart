@@ -52,6 +52,7 @@ class PreferencesStorage {
       'isSystemDarkLightSwitchEnabled';
   static const _keyThemeFlavor = 'themeFlavor';
   static const _keySortMode = 'sortMode';
+  static const _keyRichLinkPreview = 'richLinkPreview';
 
   static Future init() async =>
       _preferences = await SharedPreferences.getInstance();
@@ -259,6 +260,11 @@ class PreferencesStorage {
       _preferences?.getBool(_keyIsBackupNeeded) ?? true;
   static Future<void> setIsBackupNeeded(bool flag) async =>
       await _preferences?.setBool(_keyIsBackupNeeded, flag);
+
+  static bool get isRichLinkPreview =>
+      _preferences?.getBool(_keyRichLinkPreview) ?? true;
+  static Future<void> setIsRichLinkPreview(bool flag) async =>
+      await _preferences?.setBool(_keyRichLinkPreview, flag);
 }
 
 class PhraseHandler {
