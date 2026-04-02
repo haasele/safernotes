@@ -29,7 +29,6 @@ import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/dialogs/backup_import.dart';
 import 'package:safenotes/models/app_theme.dart';
 import 'package:safenotes/models/session.dart';
-import 'package:safenotes/utils/styles.dart';
 import 'package:safenotes/utils/url_launcher.dart';
 import 'package:safenotes/views/settings/theme_setting.dart';
 import 'package:safenotes/widgets/footer.dart';
@@ -50,19 +49,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Settings'.tr(), style: appBarTitle)),
+      appBar: AppBar(title: Text('Settings'.tr())),
       body: _settings(),
     );
   }
 
   Widget _settings() {
     return SettingsList(
-      platform: DevicePlatform.iOS,
-      lightTheme: const SettingsThemeData(),
-      darkTheme: SettingsThemeData(
-        settingsListBackground: AppThemes.darkSettingsScaffold,
-        settingsSectionBackground: AppThemes.darkSettingsCanvas,
-      ),
       sections: [
         SettingsSection(
           title: Text('General'.tr()),
@@ -95,11 +88,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             SettingsTile.navigation(
-              leading: const Icon(Icons.dark_mode_outlined),
-              title: Text('Dark Mode'.tr()),
-              value: !PreferencesStorage.isThemeDark
-                  ? Text('Off'.tr())
-                  : Text('On'.tr()),
+              leading: Icon(PreferencesStorage.isThemeDark
+                  ? Icons.dark_mode_outlined
+                  : Icons.light_mode_outlined),
+              title: Text('Dark theme'.tr()),
+              value: Text(_currentThemeLabel()),
               onPressed: (context) {
                 showThemeBottomSheet(context);
                 setState(() {});
@@ -280,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
               description: Padding(
                 padding: const EdgeInsets.only(top: 20),
-                child: footer(showVersion: true),
+                child: footer(context, showVersion: true),
               ),
             ),
           ],
@@ -294,5 +287,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     List<int> values = [30, 1, 2, 3, 5, 10, 15];
     if (index < 1) return '${values[index]} sec';
     return '${values[index]} min';
+  }
+
+  String _currentThemeLabel() {
+    final flavor = ThemeFlavor.values[PreferencesStorage.themeFlavor];
+    switch (flavor) {
+      case ThemeFlavor.system:
+        return 'Use device settings'.tr();
+      case ThemeFlavor.materialYouLight:
+        return 'Material You light'.tr();
+      case ThemeFlavor.materialYouDark:
+        return 'Material You dark'.tr();
+      case ThemeFlavor.pitchBlack:
+        return 'Pitch Black'.tr();
+    }
   }
 }

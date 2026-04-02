@@ -18,6 +18,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 // Package imports:
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:local_session_timeout/local_session_timeout.dart';
 import 'package:provider/provider.dart';
@@ -47,21 +48,32 @@ class App extends StatelessWidget {
         ChangeNotifierProvider<NotesColor>(create: (_) => NotesColor()),
       ],
       builder: (context, _) {
-        final themeProvider = Provider.of<ThemeProvider>(context);
+        return DynamicColorBuilder(
+          builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+            final themeProvider = Provider.of<ThemeProvider>(context);
 
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          navigatorKey: navigatorKey,
-          initialRoute: '/',
-          onGenerateRoute: RouteGenerator.generateRoute,
-          title: SafeNotesConfig.appName,
-          themeMode: themeProvider.themeMode,
-          theme: AppThemes.lightTheme,
-          darkTheme: AppThemes.darkTheme,
-          localizationsDelegates: context.localizationDelegates,
-          supportedLocales: context.supportedLocales,
-          locale: context.locale,
-          home: AuthWall(sessionStateStream: sessionStateStream),
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (themeProvider.dynamicLight != lightDynamic ||
+                  themeProvider.dynamicDark != darkDynamic) {
+                themeProvider.setDynamicSchemes(lightDynamic, darkDynamic);
+              }
+            });
+
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              navigatorKey: navigatorKey,
+              initialRoute: '/',
+              onGenerateRoute: RouteGenerator.generateRoute,
+              title: SafeNotesConfig.appName,
+              themeMode: themeProvider.themeMode,
+              theme: themeProvider.lightTheme,
+              darkTheme: themeProvider.darkTheme,
+              localizationsDelegates: context.localizationDelegates,
+              supportedLocales: context.supportedLocales,
+              locale: context.locale,
+              home: AuthWall(sessionStateStream: sessionStateStream),
+            );
+          },
         );
       },
     );

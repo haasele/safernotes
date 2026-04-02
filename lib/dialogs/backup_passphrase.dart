@@ -22,8 +22,6 @@ import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:crypto/crypto.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:safenotes_nord_theme/safenotes_nord_theme.dart';
-
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/utils/styles.dart';
@@ -163,7 +161,7 @@ class ImportPassPhraseDialogState extends State<ImportPassPhraseDialog> {
           Expanded(
             child: ElevatedButton(
               style: ButtonStyle(
-                backgroundColor: WidgetStateProperty.all(NordColors.aurora.red),
+                backgroundColor: WidgetStateProperty.all(Colors.red),
               ),
               child: _buttonText(formCancelButtonText, buttonTextFontSize),
               onPressed: () => Navigator.of(context).pop(),

@@ -14,102 +14,120 @@
 // Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
-import 'package:safenotes_nord_theme/safenotes_nord_theme.dart';
-
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
 
+enum ThemeFlavor { system, materialYouLight, materialYouDark, pitchBlack }
+
 class ThemeProvider extends ChangeNotifier {
-  ThemeMode themeMode = PreferencesStorage.isThemeDark
-      ? ThemeMode.dark
-      : ThemeMode.light;
+  ThemeFlavor _flavor = ThemeFlavor.values[PreferencesStorage.themeFlavor];
+  ColorScheme? _dynamicLight;
+  ColorScheme? _dynamicDark;
 
-  bool get isDarkMode => themeMode == ThemeMode.dark;
+  ThemeFlavor get flavor => _flavor;
+  ColorScheme? get dynamicLight => _dynamicLight;
+  ColorScheme? get dynamicDark => _dynamicDark;
 
-  void setIsDarkMode(bool isDark) {
-    themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-    PreferencesStorage.setIsThemeDark(isDark);
+  ThemeMode get themeMode {
+    switch (_flavor) {
+      case ThemeFlavor.system:
+        return ThemeMode.system;
+      case ThemeFlavor.materialYouLight:
+        return ThemeMode.light;
+      case ThemeFlavor.materialYouDark:
+      case ThemeFlavor.pitchBlack:
+        return ThemeMode.dark;
+    }
+  }
+
+  ThemeData get lightTheme {
+    if (_dynamicLight != null) {
+      return ThemeData(useMaterial3: true, colorScheme: _dynamicLight);
+    }
+    return AppThemes.materialYouLight;
+  }
+
+  ThemeData get darkTheme {
+    if (_flavor == ThemeFlavor.pitchBlack) {
+      return AppThemes.buildPitchBlack(_dynamicDark);
+    }
+    if (_dynamicDark != null) {
+      return ThemeData(useMaterial3: true, colorScheme: _dynamicDark);
+    }
+    return AppThemes.materialYouDark;
+  }
+
+  void setDynamicSchemes(ColorScheme? light, ColorScheme? dark) {
+    _dynamicLight = light;
+    _dynamicDark = dark;
     notifyListeners();
   }
 
-  void setIsDarkDimTheme(bool isDim) {
-    //themeMode = isDim ? ThemeMode.dark : ThemeMode.light;
-    PreferencesStorage.setIsDimTheme(isDim);
+  void setFlavor(ThemeFlavor flavor) {
+    _flavor = flavor;
+    PreferencesStorage.setThemeFlavor(flavor.index);
     notifyListeners();
   }
 }
 
 class AppThemes {
-  // Material You seed colors based on Nord theme palette
-  // Using Nord's polar night blue (#2E3440) and frost blue (#88C0D0) as seed colors
-  static const Color _lightSeedColor = Color(0xFF88C0D0); // Nord frost blue
-  static const Color _darkSeedColor = Color(
-    0xFF5E81AC,
-  ); // Nord polar night blue variant
+  static const Color seedColor = Color(0xFF88C0D0);
 
-  //static final ThemeData darkTheme = ThemeData.dark();
-  static ThemeData get darkTheme =>
-      PreferencesStorage.isDimTheme ? dimTheme : lightOutTheme;
-
-  static final ThemeData lightOutTheme = ThemeData(
-    useMaterial3: true,
-    colorScheme:
-        ColorScheme.fromSeed(
-          seedColor: _darkSeedColor,
-          brightness: Brightness.dark,
-        ).copyWith(
-          surface: Colors.black,
-          onSurface: Colors.white,
-          surfaceContainerHighest: Colors.grey.shade900,
-          surfaceContainer: Colors.grey.shade800,
-          surfaceContainerLow: Colors.grey.shade700,
-        ),
-    textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'NotoSerif'),
-    primaryTextTheme: ThemeData.dark().textTheme.apply(fontFamily: 'NotoSerif'),
-    bottomAppBarTheme: BottomAppBarThemeData(color: Colors.grey.shade900),
-    dialogTheme: DialogThemeData(backgroundColor: Colors.grey.shade900),
-    scaffoldBackgroundColor: Colors.black,
-    canvasColor: Colors.black,
-    appBarTheme: AppBarTheme(
-      backgroundColor: Colors.grey.shade900,
-      surfaceTintColor: Colors.transparent,
-    ),
-    bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: Colors.grey.shade900,
-      surfaceTintColor: Colors.transparent,
-    ),
-    drawerTheme: DrawerThemeData(backgroundColor: Colors.grey.shade900),
-  );
-
-  static final ThemeData dimTheme = ThemeData(
+  static final ThemeData materialYouLight = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: _darkSeedColor,
-      brightness: Brightness.dark,
-    ),
-    textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'NotoSerif'),
-    primaryTextTheme: ThemeData.dark().textTheme.apply(fontFamily: 'NotoSerif'),
-  );
-
-  static Color get darkSettingsScaffold => PreferencesStorage.isDimTheme
-      ? NordColors.polarNight.darkest
-      : Colors.black;
-
-  static Color? get darkSettingsCanvas => PreferencesStorage.isDimTheme
-      ? NordColors.polarNight.darker
-      : Colors.grey.shade900;
-
-  static final ThemeData lightTheme = ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: _lightSeedColor,
+      seedColor: seedColor,
       brightness: Brightness.light,
     ),
-    textTheme: ThemeData.light().textTheme.apply(fontFamily: 'NotoSerif'),
-    primaryTextTheme: ThemeData.light().textTheme.apply(
-      fontFamily: 'NotoSerif',
-    ),
-    unselectedWidgetColor: NordColors.frost.darker,
   );
+
+  static final ThemeData materialYouDark = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: Brightness.dark,
+    ),
+  );
+
+  static ThemeData buildPitchBlack(ColorScheme? baseDynamic) {
+    final baseScheme = baseDynamic ??
+        ColorScheme.fromSeed(
+          seedColor: seedColor,
+          brightness: Brightness.dark,
+        );
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: baseScheme.copyWith(
+        surface: Colors.black,
+        onSurface: Colors.white,
+        surfaceContainerLowest: Colors.black,
+        surfaceContainerLow: Colors.black,
+        surfaceContainer: Colors.black,
+        surfaceContainerHigh: Colors.black,
+        surfaceContainerHighest: const Color(0xFF121212),
+      ),
+      scaffoldBackgroundColor: Colors.black,
+      canvasColor: Colors.black,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.black,
+        surfaceTintColor: Colors.transparent,
+      ),
+      bottomAppBarTheme: const BottomAppBarThemeData(
+        color: Colors.black,
+      ),
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Colors.black,
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.black,
+        surfaceTintColor: Colors.transparent,
+      ),
+      drawerTheme: const DrawerThemeData(
+        backgroundColor: Colors.black,
+      ),
+      cardTheme: const CardThemeData(
+        color: Colors.black,
+      ),
+    );
+  }
 }

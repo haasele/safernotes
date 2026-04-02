@@ -40,7 +40,12 @@ class NotesDatabase {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(
+      path,
+      version: 3,
+      onCreate: _createDB,
+      onUpgrade: _upgradeDB,
+    );
   }
 
   Future _createDB(Database db, int version) async {
@@ -52,19 +57,43 @@ class NotesDatabase {
   ${NoteFields.id} $idType, 
   ${NoteFields.title} $textType,
   ${NoteFields.description} $textType,
-  ${NoteFields.time} $textType
+  ${NoteFields.time} $textType,
+  ${NoteFields.colorIndex} INTEGER,
+  ${NoteFields.modifiedTime} TEXT,
+  ${NoteFields.sortOrder} INTEGER
   )
   ''');
   }
 
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        'ALTER TABLE $tableNotes ADD COLUMN ${NoteFields.colorIndex} INTEGER',
+      );
+    }
+    if (oldVersion < 3) {
+      await db.execute(
+        'ALTER TABLE $tableNotes ADD COLUMN ${NoteFields.modifiedTime} TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE $tableNotes ADD COLUMN ${NoteFields.sortOrder} INTEGER',
+      );
+      // Backfill modifiedTime with createdTime for existing rows
+      await db.execute(
+        'UPDATE $tableNotes SET ${NoteFields.modifiedTime} = ${NoteFields.time} WHERE ${NoteFields.modifiedTime} IS NULL',
+      );
+    }
+  }
+
   Future<SafeNote> encryptAndStore(SafeNote note) async {
     final db = await instance.database;
-    final id = await db.insert(tableNotes, note.toJsonAndEncrypted());
+    final now = DateTime.now();
+    final noteWithMod = note.copy(modifiedTime: now);
+    final id = await db.insert(tableNotes, noteWithMod.toJsonAndEncrypted());
 
-    // Update backup on new note addition.
     await PreferencesStorage.setIsBackupNeeded(true);
 
-    return note.copy(id: id);
+    return noteWithMod.copy(id: id);
   }
 
   Future<SafeNote> decryptReadNote(int id) async {
@@ -96,7 +125,7 @@ class NotesDatabase {
     const orderBy = '${NoteFields.time} ASC';
     final result = await db.query(
       tableNotes,
-      columns: ['title', 'description', 'time'],
+      columns: ['title', 'description', 'time', 'colorIndex', 'modifiedTime', 'sortOrder'],
       orderBy: orderBy,
     );
 
@@ -106,21 +135,20 @@ class NotesDatabase {
   Future<int> encryptAndUpdate(SafeNote note) async {
     final db = await instance.database;
 
-    // Update backup on note update.
     await PreferencesStorage.setIsBackupNeeded(true);
 
+    final noteWithMod = note.copy(modifiedTime: DateTime.now());
     return db.update(
       tableNotes,
-      note.toJsonAndEncrypted(),
+      noteWithMod.toJsonAndEncrypted(),
       where: '${NoteFields.id} = ?',
-      whereArgs: [note.id],
+      whereArgs: [noteWithMod.id],
     );
   }
 
   Future<int> delete(int id) async {
     final db = await instance.database;
 
-    // Update backup on note deletion.
     await PreferencesStorage.setIsBackupNeeded(true);
 
     return await db.delete(
@@ -128,6 +156,50 @@ class NotesDatabase {
       where: '${NoteFields.id} = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<int> deleteMultiple(List<int> ids) async {
+    if (ids.isEmpty) return 0;
+    final db = await instance.database;
+
+    await PreferencesStorage.setIsBackupNeeded(true);
+
+    final placeholders = ids.map((_) => '?').join(',');
+    return await db.delete(
+      tableNotes,
+      where: '${NoteFields.id} IN ($placeholders)',
+      whereArgs: ids,
+    );
+  }
+
+  Future<void> updateColorIndex(List<int> ids, int? colorIndex) async {
+    if (ids.isEmpty) return;
+    final db = await instance.database;
+
+    await PreferencesStorage.setIsBackupNeeded(true);
+
+    final placeholders = ids.map((_) => '?').join(',');
+    await db.update(
+      tableNotes,
+      {NoteFields.colorIndex: colorIndex},
+      where: '${NoteFields.id} IN ($placeholders)',
+      whereArgs: ids,
+    );
+  }
+
+  Future<void> updateSortOrder(Map<int, int> idToOrder) async {
+    if (idToOrder.isEmpty) return;
+    final db = await instance.database;
+    final batch = db.batch();
+    for (final entry in idToOrder.entries) {
+      batch.update(
+        tableNotes,
+        {NoteFields.sortOrder: entry.value},
+        where: '${NoteFields.id} = ?',
+        whereArgs: [entry.key],
+      );
+    }
+    await batch.commit(noResult: true);
   }
 
   Future close() async {

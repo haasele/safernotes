@@ -26,38 +26,79 @@ import 'package:safenotes/utils/text_direction_util.dart';
 class NoteTileWidgetCompact extends StatelessWidget {
   final SafeNote note;
   final int index;
+  final bool isSelected;
+  final bool showDragHandle;
 
   const NoteTileWidgetCompact({
     Key? key,
     required this.note,
     required this.index,
+    this.isSelected = false,
+    this.showDragHandle = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Pick colors from the accent colors based on index
-    final color = NotesColor.getNoteColor(notIndex: index);
+    final color = NotesColor.getNoteColor(
+      notIndex: index,
+      context: context,
+      fixedColorIndex: note.colorIndex,
+    );
     final fontColor = getFontColorForBackground(color);
     final previewText = note.title == ' ' ? note.description : note.title;
+    final cs = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(5),
-        color: color,
+    return Card(
+      color: color,
+      shadowColor: cs.shadow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isSelected
+            ? BorderSide(color: cs.primary, width: 2)
+            : BorderSide.none,
       ),
-      child: AutoSizeText(
-        sanitize(previewText),
-        textDirection: getTextDirecton(previewText),
-        style: TextStyle(
-          color: fontColor,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'MerriweatherBlack',
-        ),
-        minFontSize: 15,
-        maxLines: 2,
-        overflow: TextOverflow.clip,
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: AutoSizeText(
+              sanitize(previewText),
+              textDirection: getTextDirecton(previewText),
+              style: TextStyle(
+                color: fontColor,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              minFontSize: 15,
+              maxLines: 2,
+              overflow: TextOverflow.clip,
+            ),
+          ),
+          if (isSelected)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cs.primary,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(2),
+                child: Icon(Icons.check, size: 16, color: cs.onPrimary),
+              ),
+            ),
+          if (showDragHandle)
+            Positioned(
+              top: 0,
+              bottom: 0,
+              right: 8,
+              child: Icon(
+                Icons.drag_handle,
+                size: 20,
+                color: fontColor.withAlpha(120),
+              ),
+            ),
+        ],
       ),
     );
   }

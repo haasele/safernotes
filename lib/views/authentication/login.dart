@@ -25,15 +25,12 @@ import 'package:crypto/crypto.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:local_session_timeout/local_session_timeout.dart';
-import 'package:safenotes_nord_theme/safenotes_nord_theme.dart';
-
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/dialogs/generic.dart';
 import 'package:safenotes/models/biometric_auth.dart';
 import 'package:safenotes/models/session.dart';
 import 'package:safenotes/utils/snack_message.dart';
-import 'package:safenotes/utils/styles.dart';
 import 'package:safenotes/widgets/footer.dart';
 import 'package:safenotes/widgets/login_button.dart';
 
@@ -109,7 +106,7 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
-          title: Text('Login'.tr(), style: appBarTitle),
+          title: Text('Login'.tr()),
           centerTitle: true,
         ),
         body: CustomScrollView(
@@ -126,7 +123,7 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
                     const Spacer(),
                     Padding(
                       padding: const EdgeInsets.only(top: 5),
-                      child: footer(),
+                      child: footer(context),
                     ),
                   ],
                 ),
@@ -217,7 +214,7 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
                   namedArgs: {'timeLeft': timeLeft.toString()},
                 ),
                 style: TextStyle(
-                  color: NordColors.aurora.red,
+                  color: Colors.red,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
@@ -318,9 +315,7 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
             padding: const EdgeInsets.only(top: 10, bottom: 20),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                shadowColor: PreferencesStorage.isThemeDark
-                    ? NordColors.snowStorm.lightest
-                    : NordColors.polarNight.darkest,
+                shadowColor: Theme.of(context).colorScheme.shadow,
                 minimumSize: const Size(200, 50), //Size.fromHeight(50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),

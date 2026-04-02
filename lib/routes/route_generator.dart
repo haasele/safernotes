@@ -121,10 +121,10 @@ class RouteGenerator {
 
       case '/viewnote':
         if (args is NoteDetailPageArguments) {
-          //SafeNote note = args;
           return PageTransition(
             child: NoteDetailPage(
               noteId: args.note.id!,
+              noteIndex: args.noteIndex,
               sessionStateStream: args.sessionStream,
             ),
             duration: const Duration(milliseconds: transitionDuration),
@@ -152,6 +152,7 @@ class RouteGenerator {
             child: AddEditNotePage(
               sessionStateStream: args.sessionStream,
               note: args.note,
+              noteIndex: args.noteIndex,
             ),
             duration: const Duration(milliseconds: transitionDuration),
             type: transitionType,
@@ -269,13 +270,23 @@ class RouteGenerator {
 class AddEditNoteArguments {
   final StreamController<SessionState> sessionStream;
   final SafeNote? note;
+  final int noteIndex;
 
-  AddEditNoteArguments({required this.sessionStream, this.note});
+  AddEditNoteArguments({
+    required this.sessionStream,
+    this.note,
+    this.noteIndex = 0,
+  });
 }
 
 class NoteDetailPageArguments {
   final StreamController<SessionState> sessionStream;
   final SafeNote note;
+  final int noteIndex;
 
-  NoteDetailPageArguments({required this.sessionStream, required this.note});
+  NoteDetailPageArguments({
+    required this.sessionStream,
+    required this.note,
+    this.noteIndex = 0,
+  });
 }

@@ -18,12 +18,17 @@ import 'package:safenotes/encryption/aes_encryption.dart';
 const String tableNotes = 'safe_notes';
 
 class NoteFields {
-  static final List<String> values = [id, title, description, time];
+  static final List<String> values = [
+    id, title, description, time, colorIndex, modifiedTime, sortOrder,
+  ];
 
   static const String id = '_id';
   static const String title = 'title';
   static const String description = 'description';
   static const String time = 'time';
+  static const String colorIndex = 'colorIndex';
+  static const String modifiedTime = 'modifiedTime';
+  static const String sortOrder = 'sortOrder';
 }
 
 class SafeNote {
@@ -31,12 +36,18 @@ class SafeNote {
   final String title;
   final String description;
   final DateTime createdTime;
+  final int? colorIndex;
+  final DateTime? modifiedTime;
+  final int? sortOrder;
 
   const SafeNote({
     this.id,
     required this.title,
     required this.description,
     required this.createdTime,
+    this.colorIndex,
+    this.modifiedTime,
+    this.sortOrder,
   });
 
   SafeNote copy({
@@ -44,14 +55,23 @@ class SafeNote {
     String? title,
     String? description,
     DateTime? createdTime,
+    int? colorIndex,
+    bool clearColor = false,
+    DateTime? modifiedTime,
+    int? sortOrder,
+    bool clearSortOrder = false,
   }) => SafeNote(
     id: id ?? this.id,
     title: title ?? this.title,
     description: description ?? this.description,
     createdTime: createdTime ?? this.createdTime,
+    colorIndex: clearColor ? null : (colorIndex ?? this.colorIndex),
+    modifiedTime: modifiedTime ?? this.modifiedTime,
+    sortOrder: clearSortOrder ? null : (sortOrder ?? this.sortOrder),
   );
 
   static SafeNote fromJsonAndDecrypt(Map<String, dynamic> json) {
+    final modTimeStr = json[NoteFields.modifiedTime] as String?;
     return SafeNote(
       id: json[NoteFields.id] as int?,
       title: decryptAES(
@@ -63,6 +83,9 @@ class SafeNote {
         PhraseHandler.getPass,
       ),
       createdTime: DateTime.parse(json[NoteFields.time] as String),
+      colorIndex: json[NoteFields.colorIndex] as int?,
+      modifiedTime: modTimeStr != null ? DateTime.parse(modTimeStr) : null,
+      sortOrder: json[NoteFields.sortOrder] as int?,
     );
   }
 
@@ -70,21 +93,23 @@ class SafeNote {
     String passphrase = PhraseHandler.getPass;
     return {
       NoteFields.id: id,
-      NoteFields.title: encryptAES(title, passphrase), //title,
-      NoteFields.description: encryptAES(
-        description,
-        passphrase,
-      ), //description,
+      NoteFields.title: encryptAES(title, passphrase),
+      NoteFields.description: encryptAES(description, passphrase),
       NoteFields.time: createdTime.toIso8601String(),
+      NoteFields.colorIndex: colorIndex,
+      NoteFields.modifiedTime: modifiedTime?.toIso8601String(),
+      NoteFields.sortOrder: sortOrder,
     };
   }
 
   Map<String, dynamic> toJson() {
     return {
-      //"${NoteFields.id}": this.id,
       NoteFields.title: encryptAES(title, PhraseHandler.getPass),
       NoteFields.description: encryptAES(description, PhraseHandler.getPass),
       NoteFields.time: createdTime.toIso8601String(),
+      NoteFields.colorIndex: colorIndex,
+      NoteFields.modifiedTime: modifiedTime?.toIso8601String(),
+      NoteFields.sortOrder: sortOrder,
     };
   }
 
@@ -95,6 +120,7 @@ class SafeNote {
     */
     final bool isImportEncrypted =
         ImportEncryptionControl.getIsImportEncrypted();
+    final modTimeStr = json[NoteFields.modifiedTime] as String?;
     return SafeNote(
       title: isImportEncrypted
           ? decryptAES(
@@ -109,6 +135,9 @@ class SafeNote {
             )
           : json[NoteFields.description] as String,
       createdTime: DateTime.parse(json[NoteFields.time] as String),
+      colorIndex: json[NoteFields.colorIndex] as int?,
+      modifiedTime: modTimeStr != null ? DateTime.parse(modTimeStr) : null,
+      sortOrder: json[NoteFields.sortOrder] as int?,
     );
   }
 }

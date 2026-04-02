@@ -19,7 +19,6 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 // Project imports:
-import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/models/safenote.dart';
 import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/utils/string_utils.dart';
@@ -29,14 +28,24 @@ import 'package:safenotes/utils/time_utils.dart';
 class NoteCardWidget extends StatelessWidget {
   final SafeNote note;
   final int index;
+  final bool isSelected;
+  final bool showDragHandle;
 
-  const NoteCardWidget({Key? key, required this.note, required this.index})
-    : super(key: key);
+  const NoteCardWidget({
+    Key? key,
+    required this.note,
+    required this.index,
+    this.isSelected = false,
+    this.showDragHandle = false,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Pick colors from the accent colors based on index
-    final color = NotesColor.getNoteColor(notIndex: index);
+    final color = NotesColor.getNoteColor(
+      notIndex: index,
+      context: context,
+      fixedColorIndex: note.colorIndex,
+    );
     final fontColor = getFontColorForBackground(color);
 
     DateTime now = DateTime.now();
@@ -53,52 +62,85 @@ class NoteCardWidget extends StatelessWidget {
           )
         : DateFormat.yMMMd().format(note.createdTime);
 
+    final cs = Theme.of(context).colorScheme;
+
     return Card(
-      shadowColor: PreferencesStorage.isThemeDark ? Colors.white : Colors.black,
+      shadowColor: cs.shadow,
       color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          //crossAxisAlignment: CrossAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AutoSizeText(
-              sanitize(note.title),
-              textDirection: getTextDirecton(note.title),
-              style: TextStyle(
-                color: fontColor,
-                fontSize: 20,
-                height: 1.2,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'MerriweatherBlack',
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isSelected
+            ? BorderSide(color: cs.primary, width: 2)
+            : BorderSide.none,
+      ),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AutoSizeText(
+                  sanitize(note.title),
+                  textDirection: getTextDirecton(note.title),
+                  style: TextStyle(
+                    color: fontColor,
+                    fontSize: 20,
+                    height: 1.2,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  minFontSize: 20,
+                  maxLines: 2,
+                  overflow: TextOverflow.clip,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  time,
+                  textDirection: getTextDirecton(time),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: fontColor,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                AutoSizeText(
+                  sanitize(note.description),
+                  textDirection: getTextDirecton(note.description),
+                  style:
+                      TextStyle(color: fontColor, fontSize: 16, height: 1.2),
+                  minFontSize: 16,
+                  maxLines: getMaxLine(index),
+                  overflow: TextOverflow.clip,
+                ),
+              ],
+            ),
+          ),
+          if (isSelected)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cs.primary,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(2),
+                child: Icon(Icons.check, size: 16, color: cs.onPrimary),
               ),
-              minFontSize: 20,
-              maxLines: 2,
-              overflow: TextOverflow.clip,
             ),
-            const SizedBox(height: 4),
-            Text(
-              time,
-              textDirection: getTextDirecton(time),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: fontColor,
+          if (showDragHandle)
+            Positioned(
+              bottom: 4,
+              right: 4,
+              child: Icon(
+                Icons.drag_handle,
+                size: 20,
+                color: fontColor.withAlpha(120),
               ),
             ),
-            const SizedBox(height: 6),
-            AutoSizeText(
-              sanitize(note.description),
-              textDirection: getTextDirecton(note.description),
-              style: TextStyle(color: fontColor, fontSize: 16, height: 1.2),
-              minFontSize: 16,
-              maxLines: getMaxLine(index), //3,
-              overflow: TextOverflow.clip,
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

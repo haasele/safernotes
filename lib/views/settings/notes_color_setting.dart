@@ -12,7 +12,6 @@
 */
 
 // Flutter imports:
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 // Package imports:
@@ -22,9 +21,7 @@ import 'package:settings_ui/settings_ui.dart';
 
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
-import 'package:safenotes/models/app_theme.dart';
 import 'package:safenotes/utils/notes_color.dart';
-import 'package:safenotes/utils/styles.dart';
 
 class ColorPallet extends StatefulWidget {
   const ColorPallet({Key? key}) : super(key: key);
@@ -34,28 +31,21 @@ class ColorPallet extends StatefulWidget {
 }
 
 class ColorPalletState extends State<ColorPallet> {
-  var _selectedIndex = PreferencesStorage.colorfulNotesColorIndex;
-  var items = allNotesColorTheme;
+  var _selectedIndex = PreferencesStorage.colorfulNotesColorIndex
+      .clamp(0, allNoteColorPresets.length - 1);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Notes Color'.tr(), style: appBarTitle)),
+      appBar: AppBar(title: Text('Notes Color'.tr())),
       body: _settings(),
     );
   }
 
   Widget _settings() {
     return SettingsList(
-      platform: DevicePlatform.iOS,
-      lightTheme: const SettingsThemeData(),
-      darkTheme: SettingsThemeData(
-        settingsListBackground: AppThemes.darkSettingsScaffold,
-        settingsSectionBackground: AppThemes.darkSettingsCanvas,
-      ),
       sections: [
         SettingsSection(
-          //title: Text('General'),
           tiles: <SettingsTile>[
             SettingsTile.switchTile(
               initialValue: PreferencesStorage.isColorful,
@@ -74,7 +64,7 @@ class ColorPalletState extends State<ColorPallet> {
         ),
         CustomSettingsSection(
           child: Column(
-            children: [_colourPreview(), _buildColourComboList(context)],
+            children: [_colourPreview(), _buildPresetList(context)],
           ),
         ),
       ],
@@ -82,157 +72,100 @@ class ColorPalletState extends State<ColorPallet> {
   }
 
   Widget _colourPreview() {
-    return Column(
-      children: [
-        iosStylePaddedCard(
-          children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: _colorBox(),
-            ),
-          ],
+    final cs = Theme.of(context).colorScheme;
+    final brightness = Theme.of(context).brightness;
+    final preset = allNoteColorPresets[_selectedIndex];
+
+    Color? dynamicSeed;
+    if (preset.isDynamic) {
+      dynamicSeed = cs.primary;
+    }
+    final colors = preset.generatePalette(brightness, dynamicSeed: dynamicSeed);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Card(
+        color: cs.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: _colorBoxes(colors),
+          ),
         ),
-      ],
+      ),
     );
   }
 
-  List<Widget> _colorBox() {
-    List<Widget> colorPallets = [];
+  List<Widget> _colorBoxes(List<Color> colors) {
     final double heightRatio = MediaQuery.of(context).size.height / 100;
     final double boxHeight = heightRatio * 5;
     const double radius = 20;
-    var first = const BorderRadius.horizontal(left: Radius.circular(radius));
-    var last = const BorderRadius.horizontal(right: Radius.circular(radius));
-    var colors = items[_selectedIndex].colorList;
 
-    colorPallets.add(
-      Expanded(
-        child: Container(
-          decoration: BoxDecoration(color: colors[0], borderRadius: first),
-          height: boxHeight,
-        ),
-      ),
-    );
-    if (colors.length > 1) {
-      for (final color in colors.sublist(1, colors.length - 1)) {
-        colorPallets.add(
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(color: color),
-              height: boxHeight,
-              //color: color,
-            ),
-          ),
-        );
+    return List.generate(colors.length, (i) {
+      BorderRadius? br;
+      if (i == 0) {
+        br = const BorderRadius.horizontal(left: Radius.circular(radius));
+      } else if (i == colors.length - 1) {
+        br = const BorderRadius.horizontal(right: Radius.circular(radius));
       }
-    }
-    colorPallets.add(
-      Expanded(
+      return Expanded(
         child: Container(
-          decoration: BoxDecoration(
-            color: colors[colors.length - 1],
-            borderRadius: last,
-          ),
+          decoration: BoxDecoration(color: colors[i], borderRadius: br),
           height: boxHeight,
         ),
-      ),
-    );
-    return colorPallets;
+      );
+    });
   }
 
-  Widget iosStylePaddedCard({required List<Widget> children}) {
-    final double widthRatio = MediaQuery.of(context).size.width / 100;
-    final double heightRatio = MediaQuery.of(context).size.height / 100;
-    const double containerRadius = 30;
-
+  Widget _buildPresetList(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: EdgeInsets.only(
-        left: widthRatio * 5,
-        right: widthRatio * 5,
-        bottom: heightRatio * 1,
-      ),
-      child: Container(
-        decoration: PreferencesStorage.isThemeDark
-            ? BoxDecoration(
-                color: AppThemes.darkSettingsCanvas,
-                borderRadius: BorderRadius.circular(containerRadius),
-              )
-            : BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(containerRadius),
-              ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        color: cs.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        clipBehavior: Clip.antiAlias,
         child: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: children,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildColourComboList(BuildContext context) {
-    return CupertinoPageScaffold(
-      child: CupertinoFormSection.insetGrouped(
-        backgroundColor: PreferencesStorage.isThemeDark
-            ? AppThemes.darkSettingsScaffold
-            : const Color(0x00000000),
-        decoration: PreferencesStorage.isThemeDark
-            ? BoxDecoration(
-                color: AppThemes.darkSettingsCanvas,
-                borderRadius: BorderRadius.circular(15),
-              )
-            : null,
-        children: [
-          ...List.generate(
-            items.length,
-            (index) => GestureDetector(
+          children: List.generate(allNoteColorPresets.length, (index) {
+            final preset = allNoteColorPresets[index];
+            final isSelected = _selectedIndex == index;
+            return ListTile(
+              leading: _presetIcon(preset),
+              title: Text(preset.name.tr()),
+              subtitle: preset.description != null
+                  ? Text(preset.description!.tr())
+                  : null,
+              trailing: isSelected
+                  ? Icon(Icons.check, color: cs.primary)
+                  : null,
               onTap: () => setState(() {
                 PreferencesStorage.setColorfulNotesColorIndex(index);
                 _selectedIndex = index;
+                Provider.of<NotesColor>(context, listen: false)
+                    .setPresetIndex(index);
               }),
-              child: AbsorbPointer(
-                child: buildCupertinoFormRow(
-                  items[index].prefix,
-                  items[index].helper,
-                  selected: _selectedIndex == index,
-                ),
-              ),
-            ),
-          ),
-        ],
+            );
+          }),
+        ),
       ),
     );
   }
 
-  Widget buildCupertinoFormRow(
-    String prefix,
-    String? helper, {
-    bool selected = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 5, bottom: 5),
-      child: CupertinoFormRow(
-        prefix: Text(prefix.tr()),
-        helper: helper != null
-            ? Text(helper.tr(), style: Theme.of(context).textTheme.bodySmall)
-            : null,
-        child: selected
-            ? const Padding(
-                padding: EdgeInsets.only(right: 5),
-                child: Icon(
-                  CupertinoIcons.check_mark,
-                  color: Color.fromARGB(255, 45, 118, 234),
-                  size: 20,
-                ),
-              )
-            : Container(),
+  Widget _presetIcon(NoteColorPreset preset) {
+    if (preset.isDynamic) {
+      return Icon(
+        Icons.auto_awesome,
+        color: Theme.of(context).colorScheme.primary,
+      );
+    }
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: preset.seedColor,
+        shape: BoxShape.circle,
       ),
     );
   }

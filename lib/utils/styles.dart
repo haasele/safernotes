@@ -14,35 +14,10 @@
 // Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
-import 'package:safenotes_nord_theme/safenotes_nord_theme.dart';
-
-// Project imports:
-import 'package:safenotes/data/preference_and_config.dart';
-
-class Style {
-  static TextStyle buttonTextStyle() {
-    return TextStyle(
-      color: PreferencesStorage.isThemeDark
-          ? NordColors.polarNight.darkest
-          : Colors.white,
-    );
-  }
-}
-
 TextStyle dialogBodyTextStyle = const TextStyle(fontSize: 14);
 
 TextStyle dialogHeadTextStyle = const TextStyle(
-  fontFamily: 'MerriweatherBlack',
   fontWeight: FontWeight.bold,
   letterSpacing: 0,
   fontSize: 20,
-);
-
-TextStyle appBarTitle = const TextStyle(
-  fontFamily: 'MerriweatherBlack',
-  fontWeight: FontWeight.bold,
-  letterSpacing: -0.4,
-  fontSize: 20,
-  color: Colors.white,
 );

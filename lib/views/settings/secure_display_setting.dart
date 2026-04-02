@@ -20,8 +20,6 @@ import 'package:settings_ui/settings_ui.dart';
 
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
-import 'package:safenotes/models/app_theme.dart';
-import 'package:safenotes/utils/styles.dart';
 
 class SecureDisplaySetting extends StatefulWidget {
   const SecureDisplaySetting({Key? key}) : super(key: key);
@@ -34,19 +32,13 @@ class _SecureDisplaySettingState extends State<SecureDisplaySetting> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Secure Display'.tr(), style: appBarTitle)),
+      appBar: AppBar(title: Text('Secure Display'.tr())),
       body: _settings(),
     );
   }
 
   Widget _settings() {
     return SettingsList(
-      platform: DevicePlatform.iOS,
-      lightTheme: const SettingsThemeData(),
-      darkTheme: SettingsThemeData(
-        settingsListBackground: AppThemes.darkSettingsScaffold,
-        settingsSectionBackground: AppThemes.darkSettingsCanvas,
-      ),
       sections: [
         SettingsSection(
           title: Text('Close and open app for change to take effect'.tr()),

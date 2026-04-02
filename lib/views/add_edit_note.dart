@@ -20,20 +20,23 @@ import 'package:flutter/material.dart';
 // Package imports:
 import 'package:easy_localization/easy_localization.dart';
 import 'package:local_session_timeout/local_session_timeout.dart';
-import 'package:safenotes_nord_theme/safenotes_nord_theme.dart';
-
 // Project imports:
-import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/models/editor_state.dart';
 import 'package:safenotes/models/safenote.dart';
+import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/widgets/note_widget.dart';
 
 class AddEditNotePage extends StatefulWidget {
   final StreamController<SessionState> sessionStateStream;
   final SafeNote? note;
+  final int noteIndex;
 
-  const AddEditNotePage({Key? key, this.note, required this.sessionStateStream})
-    : super(key: key);
+  const AddEditNotePage({
+    Key? key,
+    this.note,
+    required this.sessionStateStream,
+    this.noteIndex = 0,
+  }) : super(key: key);
 
   @override
   AddEditNotePageState createState() => AddEditNotePageState();
@@ -55,9 +58,19 @@ class AddEditNotePageState extends State<AddEditNotePage> {
     NoteEditorState.setSaveAttempted(false);
   }
 
+  Color? _noteColor(BuildContext context) {
+    if (widget.note == null) return null;
+    return NotesColor.getNoteColor(
+      notIndex: widget.noteIndex,
+      context: context,
+      fixedColorIndex: widget.note?.colorIndex,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final bg = _noteColor(context);
 
     return PopScope(
       canPop: true,
@@ -69,8 +82,12 @@ class AddEditNotePageState extends State<AddEditNotePage> {
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
+          backgroundColor: bg,
           resizeToAvoidBottomInset: false,
-          appBar: AppBar(actions: [buildButton()]),
+          appBar: AppBar(
+            backgroundColor: bg ?? Theme.of(context).appBarTheme.backgroundColor,
+            actions: [buildButton()],
+          ),
           body: SingleChildScrollView(
             reverse: true,
             child: Padding(
@@ -111,9 +128,8 @@ class AddEditNotePageState extends State<AddEditNotePage> {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: PreferencesStorage.isThemeDark
-              ? null
-              : NordColors.polarNight.darkest,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         ),
         onPressed: isFormValid ? onSaveCallback : null,
         child: Text(

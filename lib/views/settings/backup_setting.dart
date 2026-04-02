@@ -15,23 +15,19 @@
 import 'dart:io';
 
 // Flutter imports:
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 // Package imports:
 import 'package:easy_localization/easy_localization.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:safenotes_nord_theme/safenotes_nord_theme.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
-import 'package:safenotes/models/app_theme.dart';
 import 'package:safenotes/utils/scheduled_task.dart';
 import 'package:safenotes/utils/storage_permission.dart';
-import 'package:safenotes/utils/styles.dart';
 import 'package:safenotes/utils/time_utils.dart';
 import 'package:safenotes/widgets/login_button.dart';
 
@@ -106,18 +102,14 @@ class BackupSettingState extends State<BackupSetting> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Backup'.tr(), style: appBarTitle)),
+      appBar: AppBar(title: Text('Backup'.tr())),
       body: _bodyBackup(context),
     );
   }
 
   Widget _bodyBackup(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return SettingsList(
-      platform: DevicePlatform.iOS,
-      darkTheme: SettingsThemeData(
-        settingsListBackground: AppThemes.darkSettingsScaffold,
-        settingsSectionBackground: AppThemes.darkSettingsCanvas,
-      ),
       sections: [
         SettingsSection(
           tiles: <SettingsTile>[
@@ -135,11 +127,18 @@ class BackupSettingState extends State<BackupSetting> {
           ],
         ),
         CustomSettingsSection(
-          child: CupertinoPageScaffold(
-            child: Column(
-              children: [
-                iosStylePaddedCard(
-                  children: <Widget>[
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
+              color: cs.surfaceContainerHigh,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     _buildUpperBackupView(),
                     const SizedBox(height: 10),
                     Text(
@@ -150,42 +149,11 @@ class BackupSettingState extends State<BackupSetting> {
                     _buildBackupNowButton(),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget iosStylePaddedCard({required List<Widget> children}) {
-    final double widthRatio = MediaQuery.of(context).size.width / 100;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: widthRatio * 5),
-      child: Container(
-        decoration: PreferencesStorage.isThemeDark
-            ? BoxDecoration(
-                color: AppThemes.darkSettingsCanvas,
-                borderRadius: BorderRadius.circular(15),
-              )
-            : BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-              ),
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: children,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -196,9 +164,6 @@ class BackupSettingState extends State<BackupSetting> {
       children: [
         Icon(
           Icons.backup,
-          color: !PreferencesStorage.isThemeDark
-              ? AppThemes.darkSettingsCanvas
-              : null,
           size: (widthRatio * 15),
         ),
         const SizedBox(width: 15),
@@ -227,7 +192,8 @@ class BackupSettingState extends State<BackupSetting> {
     );
   }
 
-  Widget _showLocationPath(context) {
+  Widget _showLocationPath(dynamic context) {
+    final cs = Theme.of(this.context).colorScheme;
     if (Platform.isIOS && validWorkingBackupFullyQualifiedPath.isNotEmpty) {
       return Text.rich(
         TextSpan(
@@ -238,14 +204,14 @@ class BackupSettingState extends State<BackupSetting> {
                   'locationPath': validWorkingBackupFullyQualifiedPath,
                 },
               ),
-              style: TextStyle(color: NordColors.frost.darker, fontSize: 10),
+              style: TextStyle(color: cs.primary, fontSize: 10),
               recognizer: TapGestureRecognizer()..onTap = onShowIosBackupDir,
             ),
             const WidgetSpan(child: SizedBox(width: 1)),
             WidgetSpan(
               child: Icon(
                 Icons.open_in_new,
-                color: NordColors.frost.darker,
+                color: cs.primary,
                 size: 12,
               ),
             ),

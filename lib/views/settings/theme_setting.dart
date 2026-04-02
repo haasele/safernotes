@@ -19,221 +19,68 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
 // Project imports:
-import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/models/app_theme.dart';
-import 'package:safenotes/utils/ios_style_list_tiles.dart';
 
 void showThemeBottomSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
-    builder: (context) {
-      return const ThemeBottomSheet();
-    },
+    showDragHandle: true,
+    builder: (context) => const ThemeBottomSheet(),
   );
 }
 
-class ThemeBottomSheet extends StatefulWidget {
+class ThemeBottomSheet extends StatelessWidget {
   const ThemeBottomSheet({Key? key}) : super(key: key);
 
   @override
-  ThemeBottomSheetState createState() => ThemeBottomSheetState();
-}
-
-class ThemeBottomSheetState extends State<ThemeBottomSheet> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final dimText = "Dim".tr();
-    final darkModeText = 'Dark mode'.tr();
-    final lightOutText = "Light out".tr();
-    final themeText = 'Theme'.tr();
-    final systemDefaultSettingsText = "Use device settings".tr();
-    final systemDefaultSettingsSubtitleText =
-        "Use device's light or dark mode setting for the app.".tr();
+    final provider = Provider.of<ThemeProvider>(context);
+    final tt = Theme.of(context).textTheme;
 
-    DarkThemeEnum darkTheme =
-        DarkThemeEnum.values[PreferencesStorage.darkThemeEnum];
-
-    bool isThemeActive = Theme.of(context).brightness == Brightness.dark;
-    bool isPlatformDark =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
-
-    bool darkModeSwitchValue =
-        (PreferencesStorage.isSystemDarkLightSwitchEnabled)
-        ? isPlatformDark
-        : PreferencesStorage.isLocalDarkSwitchEnabled;
-
-    final symmetricPadding = MediaQuery.of(context).size.width * 0.04;
-    final topHeadingPadding = MediaQuery.of(context).size.height * 0.03;
-    const headTextStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: 20);
-    final innerTextStyle = Theme.of(
-      context,
-    ).textTheme.titleMedium!.copyWith(fontSize: 16);
-
-    return Stack(
-      alignment: AlignmentDirectional.topCenter,
-      clipBehavior: Clip.none,
-      children: [
-        Positioned(
-          top: -15,
-          child: Container(
-            width: 40,
-            height: 7,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(5),
-              color: Theme.of(context).secondaryHeaderColor,
-            ),
-          ),
-        ),
-        Column(
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: EdgeInsets.only(
-                left: symmetricPadding,
-                right: symmetricPadding,
-                top: symmetricPadding,
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    darkModeText,
-                    style: headTextStyle,
-                    textAlign: TextAlign.center,
-                  ),
-                  CupertinoSwitchListTile(
-                    title: Text(darkModeText, style: innerTextStyle),
-                    value: darkModeSwitchValue,
-                    onChanged: (bool value) async {
-                      final provider = Provider.of<ThemeProvider>(
-                        context,
-                        listen: false,
-                      );
-                      provider.setIsDarkMode(value);
-
-                      await PreferencesStorage.setLocalDarkSwitchEnabled(value);
-                      await PreferencesStorage.setSystemDarkLightSwitchEnabled(
-                        false,
-                      );
-
-                      setState(() {});
-                    },
-                  ),
-                  CupertinoSwitchListTile(
-                    title: Text(
-                      systemDefaultSettingsText,
-                      style: innerTextStyle,
-                    ),
-                    subtitle: Text(
-                      systemDefaultSettingsSubtitleText,
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                    value: PreferencesStorage.isSystemDarkLightSwitchEnabled,
-                    onChanged: (bool value) async {
-                      final provider = Provider.of<ThemeProvider>(
-                        context,
-                        listen: false,
-                      );
-                      provider.setIsDarkMode(isPlatformDark);
-
-                      await PreferencesStorage.setLocalDarkSwitchEnabled(
-                        isPlatformDark,
-                      );
-                      await PreferencesStorage.setSystemDarkLightSwitchEnabled(
-                        value,
-                      );
-                      setState(() {});
-                    },
-                  ),
-                ],
-              ),
+            Text(
+              'Dark theme'.tr(),
+              style: tt.titleLarge,
             ),
-            _divider(),
-            Padding(
-              padding: EdgeInsets.only(top: topHeadingPadding / 4),
-              child: Text(
-                themeText,
-                style: headTextStyle,
-                textAlign: TextAlign.center,
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(
-                left: symmetricPadding,
-                right: symmetricPadding,
-                bottom: symmetricPadding + 30,
-              ),
+            const SizedBox(height: 8),
+            RadioGroup<ThemeFlavor>(
+              groupValue: provider.flavor,
+              onChanged: (ThemeFlavor? v) {
+                if (v == null) return;
+                Provider.of<ThemeProvider>(context, listen: false)
+                    .setFlavor(v);
+              },
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  CupertinoCheckListTile(
-                    title: Text(dimText, style: innerTextStyle),
-                    value: darkTheme == DarkThemeEnum.dim,
-                    onChanged: !isThemeActive
-                        ? null
-                        : (bool? value) {
-                            setModalStateDarkTheme(
-                              context: context,
-                              setState: setState,
-                              darkTheme: darkTheme,
-                              value: (value == true)
-                                  ? DarkThemeEnum.dim
-                                  : DarkThemeEnum.lightOut,
-                              isDarkDim: true,
-                            );
-                          },
+                  RadioListTile<ThemeFlavor>(
+                    title: Text('Use device settings'.tr()),
+                    value: ThemeFlavor.system,
                   ),
-                  CupertinoCheckListTile(
-                    title: Text(lightOutText, style: innerTextStyle),
-                    value: darkTheme == DarkThemeEnum.lightOut,
-                    onChanged: !isThemeActive
-                        ? null
-                        : (bool? value) {
-                            setModalStateDarkTheme(
-                              context: context,
-                              setState: setState,
-                              darkTheme: darkTheme,
-                              value: (value == true)
-                                  ? DarkThemeEnum.lightOut
-                                  : DarkThemeEnum.dim,
-                              isDarkDim: false,
-                            );
-                          },
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  RadioListTile<ThemeFlavor>(
+                    title: Text('Material You light'.tr()),
+                    value: ThemeFlavor.materialYouLight,
+                  ),
+                  RadioListTile<ThemeFlavor>(
+                    title: Text('Material You dark'.tr()),
+                    value: ThemeFlavor.materialYouDark,
+                  ),
+                  RadioListTile<ThemeFlavor>(
+                    title: Text('Pitch Black'.tr()),
+                    value: ThemeFlavor.pitchBlack,
                   ),
                 ],
               ),
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 }
-
-Widget _divider() => Divider(
-  color: PreferencesStorage.isThemeDark
-      ? Colors.grey.shade600
-      : Colors.grey.shade500,
-);
-
-void setModalStateDarkTheme({
-  required BuildContext context,
-  required StateSetter setState,
-  required DarkThemeEnum darkTheme,
-  required var value,
-  required bool isDarkDim,
-}) {
-  final provider = Provider.of<ThemeProvider>(context, listen: false);
-  provider.setIsDarkDimTheme(isDarkDim);
-
-  setState(() {
-    darkTheme = value!;
-    PreferencesStorage.setDarkThemeEnum(index: darkTheme.index);
-  });
-}
-
-enum DarkThemeEnum { dim, lightOut }

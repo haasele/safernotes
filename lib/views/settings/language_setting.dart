@@ -12,7 +12,6 @@
 */
 
 // Flutter imports:
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 // Package imports:
@@ -21,8 +20,6 @@ import 'package:settings_ui/settings_ui.dart';
 
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
-import 'package:safenotes/models/app_theme.dart';
-import 'package:safenotes/utils/styles.dart';
 
 class LanguageSetting extends StatefulWidget {
   const LanguageSetting({Key? key}) : super(key: key);
@@ -35,19 +32,13 @@ class _LanguageSettingState extends State<LanguageSetting> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Language'.tr(), style: appBarTitle)),
+      appBar: AppBar(title: Text('Language'.tr())),
       body: _settings(),
     );
   }
 
   Widget _settings() {
     return SettingsList(
-      platform: DevicePlatform.iOS,
-      lightTheme: const SettingsThemeData(),
-      darkTheme: SettingsThemeData(
-        settingsListBackground: AppThemes.darkSettingsScaffold,
-        settingsSectionBackground: AppThemes.darkSettingsCanvas,
-      ),
       sections: [
         CustomSettingsSection(
           child: CustomSettingsTile(child: _buildLanguageList(context)),
@@ -66,67 +57,36 @@ class _LanguageSettingState extends State<LanguageSetting> {
     }
 
     var items = SafeNotesConfig.languageItems;
+    final cs = Theme.of(context).colorScheme;
 
-    return CupertinoPageScaffold(
-      child: SingleChildScrollView(
-        child: CupertinoFormSection.insetGrouped(
-          backgroundColor: PreferencesStorage.isThemeDark
-              ? AppThemes.darkSettingsScaffold
-              : const Color(0x00000000),
-          decoration: PreferencesStorage.isThemeDark
-              ? BoxDecoration(
-                  color: AppThemes.darkSettingsCanvas,
-                  borderRadius: BorderRadius.circular(15),
-                )
-              : null,
-          children: [
-            ...List.generate(
-              items.length,
-              (index) => GestureDetector(
-                onTap: () => setState(() {
-                  selectedIndex = index;
-                  context.setLocale(
-                    SafeNotesConfig.allLocale[items[index].prefix]!,
-                  );
-                  setState(() {});
-                }),
-                child: AbsorbPointer(
-                  child: buildCupertinoFormRow(
-                    items[index].prefix,
-                    items[index].helper,
-                    selected: selectedIndex == index,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildCupertinoFormRow(
-    String prefix,
-    String? helper, {
-    bool selected = false,
-  }) {
     return Padding(
-      padding: const EdgeInsets.only(top: 5, bottom: 5),
-      child: CupertinoFormRow(
-        prefix: Text(prefix),
-        helper: helper != null
-            ? Text(helper, style: Theme.of(context).textTheme.bodySmall)
-            : null,
-        child: selected
-            ? const Padding(
-                padding: EdgeInsets.only(right: 5),
-                child: Icon(
-                  CupertinoIcons.check_mark,
-                  color: Color.fromARGB(255, 45, 118, 234),
-                  size: 20,
-                ),
-              )
-            : Container(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        color: cs.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        clipBehavior: Clip.antiAlias,
+        child: ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final isSelected = selectedIndex == index;
+            return ListTile(
+              title: Text(items[index].prefix),
+              subtitle: items[index].helper != null
+                  ? Text(items[index].helper!)
+                  : null,
+              trailing: isSelected
+                  ? Icon(Icons.check, color: cs.primary)
+                  : null,
+              onTap: () => setState(() {
+                context.setLocale(
+                  SafeNotesConfig.allLocale[items[index].prefix]!,
+                );
+              }),
+            );
+          },
+        ),
       ),
     );
   }
