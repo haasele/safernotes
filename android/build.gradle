@@ -11,6 +11,60 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// Configure namespace for all Android subprojects
+subprojects { proj ->
+    proj.plugins.withType(com.android.build.gradle.BasePlugin) {
+        proj.android {
+            if (namespace == null) {
+                // Try multiple locations for AndroidManifest.xml
+                def manifestFiles = [
+                    proj.file("src/main/AndroidManifest.xml"),
+                    proj.file("AndroidManifest.xml")
+                ]
+                
+                def namespaceFound = false
+                for (def manifestFile : manifestFiles) {
+                    if (manifestFile.exists()) {
+                        try {
+                            // Extract package name from AndroidManifest.xml using string operations
+                            def manifestText = manifestFile.text
+                            def packageStart = manifestText.indexOf('package="')
+                            def valueStart = packageStart + 9
+                            if (packageStart == -1) {
+                                packageStart = manifestText.indexOf("package='")
+                                valueStart = packageStart + 9
+                            }
+                            if (packageStart != -1) {
+                                // Find the closing quote
+                                def packageEnd = manifestText.indexOf('"', valueStart)
+                                if (packageEnd == -1) {
+                                    packageEnd = manifestText.indexOf("'", valueStart)
+                                }
+                                if (packageEnd != -1) {
+                                    def packageName = manifestText.substring(valueStart, packageEnd)
+                                    if (packageName && !packageName.isEmpty()) {
+                                        namespace packageName
+                                        namespaceFound = true
+                                        break
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            // Continue to next file
+                        }
+                    }
+                }
+                
+                // Fallback: use project name if no namespace found
+                if (!namespaceFound) {
+                    def fallbackNamespace = "com.${proj.name.toLowerCase().replace('-', '').replace('_', '')}"
+                    namespace fallbackNamespace
+                }
+            }
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }

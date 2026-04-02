@@ -40,45 +40,65 @@ class ThemeProvider extends ChangeNotifier {
 }
 
 class AppThemes {
+  // Material You seed colors based on Nord theme palette
+  // Using Nord's polar night blue (#2E3440) and frost blue (#88C0D0) as seed colors
+  static const Color _lightSeedColor = Color(0xFF88C0D0); // Nord frost blue
+  static const Color _darkSeedColor =
+      Color(0xFF5E81AC); // Nord polar night blue variant
+
   //static final ThemeData darkTheme = ThemeData.dark();
   static ThemeData get darkTheme =>
       PreferencesStorage.isDimTheme ? dimTheme : lightOutTheme;
 
-  static final ThemeData lightOutTheme = NordTheme.dark().copyWith(
-      textTheme: ThemeData.dark().textTheme.apply(
-            fontFamily: 'NotoSerif',
-          ),
-      primaryTextTheme: ThemeData.dark().textTheme.apply(
-            fontFamily: 'NotoSerif',
-          ),
-      bottomAppBarTheme: NordTheme.dark().bottomAppBarTheme.copyWith(
-            color: Colors.grey.shade900,
-          ),
-      dialogBackgroundColor: Colors.grey.shade900,
-      primaryColor: Colors.black,
-      scaffoldBackgroundColor: Colors.black,
-      canvasColor: Colors.black,
-      primaryColorDark: Colors.black,
-      appBarTheme: const AppBarTheme().copyWith(
-        color: Colors.grey.shade900,
-      ),
-      bottomSheetTheme: const BottomSheetThemeData().copyWith(
-        modalBackgroundColor: Colors.grey.shade900,
-      ),
-      drawerTheme: NordTheme.dark().drawerTheme.copyWith(
-            backgroundColor: Colors.grey.shade900,
-          )
-      //platform: TargetPlatform.iOS,
-      );
-
-  static final ThemeData dimTheme = NordTheme.dark().copyWith(
+  static final ThemeData lightOutTheme = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: _darkSeedColor,
+      brightness: Brightness.dark,
+    ).copyWith(
+      surface: Colors.black,
+      onSurface: Colors.white,
+      surfaceContainerHighest: Colors.grey.shade900,
+      surfaceContainer: Colors.grey.shade800,
+      surfaceContainerLow: Colors.grey.shade700,
+    ),
     textTheme: ThemeData.dark().textTheme.apply(
           fontFamily: 'NotoSerif',
         ),
     primaryTextTheme: ThemeData.dark().textTheme.apply(
           fontFamily: 'NotoSerif',
         ),
-    //platform: TargetPlatform.iOS,
+    bottomAppBarTheme: BottomAppBarThemeData(
+      color: Colors.grey.shade900,
+    ),
+    dialogBackgroundColor: Colors.grey.shade900,
+    scaffoldBackgroundColor: Colors.black,
+    canvasColor: Colors.black,
+    appBarTheme: AppBarTheme(
+      backgroundColor: Colors.grey.shade900,
+      surfaceTintColor: Colors.transparent,
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: Colors.grey.shade900,
+      surfaceTintColor: Colors.transparent,
+    ),
+    drawerTheme: DrawerThemeData(
+      backgroundColor: Colors.grey.shade900,
+    ),
+  );
+
+  static final ThemeData dimTheme = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: _darkSeedColor,
+      brightness: Brightness.dark,
+    ),
+    textTheme: ThemeData.dark().textTheme.apply(
+          fontFamily: 'NotoSerif',
+        ),
+    primaryTextTheme: ThemeData.dark().textTheme.apply(
+          fontFamily: 'NotoSerif',
+        ),
   );
 
   static Color get darkSettingsScaffold => PreferencesStorage.isDimTheme
@@ -89,7 +109,12 @@ class AppThemes {
       ? NordColors.polarNight.darker
       : Colors.grey.shade900;
 
-  static final ThemeData lightTheme = NordTheme.light().copyWith(
+  static final ThemeData lightTheme = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: _lightSeedColor,
+      brightness: Brightness.light,
+    ),
     textTheme: ThemeData.light().textTheme.apply(
           fontFamily: 'NotoSerif',
         ),
@@ -97,7 +122,5 @@ class AppThemes {
           fontFamily: 'NotoSerif',
         ),
     unselectedWidgetColor: NordColors.frost.darker,
-
-    //platform: TargetPlatform.iOS,
   );
 }

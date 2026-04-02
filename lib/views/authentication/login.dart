@@ -448,7 +448,6 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
       try {
         authenticated = await auth.authenticate(
           localizedReason: 'Login using your biometric credential',
-          options: const AuthenticationOptions(stickyAuth: true),
         );
       } catch (_) {}
       if (authenticated) await _login(await BiometricAuth.authKey);
