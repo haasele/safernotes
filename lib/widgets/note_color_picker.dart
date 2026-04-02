@@ -62,11 +62,29 @@ class _NoteColorPickerSheet extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 16),
-                _buildColorCircle(
-                  context: context,
-                  color: cs.surfaceContainerHigh,
-                  index: -1,
-                  label: 'Default'.tr(),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _buildColorCircle(
+                      context: context,
+                      color: cs.surfaceContainerHigh,
+                      index: -1,
+                      label: 'Default'.tr(),
+                    ),
+                    _buildColorCircle(
+                      context: context,
+                      color: Colors.white,
+                      index: NotesColor.specialWhiteIndex,
+                      label: 'White'.tr(),
+                    ),
+                    _buildColorCircle(
+                      context: context,
+                      color: Colors.black,
+                      index: NotesColor.specialBlackIndex,
+                      label: 'Black'.tr(),
+                    ),
+                  ],
                 ),
               ],
             ),

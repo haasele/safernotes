@@ -483,6 +483,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       key: key,
       padding: const EdgeInsets.all(15),
       itemCount: notes.length,
+      buildDefaultDragHandles: false,
       onReorder: (oldIndex, newIndex) {
         if (newIndex > oldIndex) newIndex--;
         _onReorder(oldIndex, newIndex);
@@ -498,19 +499,44 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       itemBuilder: (context, index) {
         final note = notes[index];
         final isSelected = _selectedNoteIds.contains(note.id);
-        return InkWell(
+        final tileWidget = PreferencesStorage.isCompactPreview
+            ? NoteTileWidgetCompact(
+                note: note,
+                index: index,
+                isSelected: isSelected,
+                showDragHandle: _isSelectionMode,
+              )
+            : NoteTileWidget(
+                note: note,
+                index: index,
+                isSelected: isSelected,
+                showDragHandle: _isSelectionMode,
+              );
+
+        return Stack(
           key: ValueKey(note.id),
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _onNoteTap(note, index),
-          onLongPress: () => _onNoteLongPress(note),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 7),
-            child: PreferencesStorage.isCompactPreview
-                ? NoteTileWidgetCompact(
-                    note: note, index: index, isSelected: isSelected)
-                : NoteTileWidget(
-                    note: note, index: index, isSelected: isSelected),
-          ),
+          children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _onNoteTap(note, index),
+              onLongPress: () => _onNoteLongPress(note),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 7),
+                child: tileWidget,
+              ),
+            ),
+            if (_isSelectionMode)
+              Positioned(
+                top: 0,
+                bottom: 7,
+                right: 0,
+                width: 48,
+                child: ReorderableDragStartListener(
+                  index: index,
+                  child: const SizedBox.expand(),
+                ),
+              ),
+          ],
         );
       },
     );
@@ -530,49 +556,63 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           itemBuilder: (context, index) {
             final note = notes[index];
             final isSelected = _selectedNoteIds.contains(note.id);
-            return LongPressDraggable<int>(
-              data: index,
-              feedback: Material(
-                elevation: 6,
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  width: (constraints.maxWidth - 24) / crossAxisCount - 4,
-                  child: Opacity(
-                    opacity: 0.85,
-                    child: PreferencesStorage.isCompactPreview
-                        ? NoteCardWidgetCompact(
-                            note: note, index: index, isSelected: false)
-                        : NoteCardWidget(
-                            note: note, index: index, isSelected: false),
-                  ),
-                ),
-              ),
-              childWhenDragging: Opacity(
-                opacity: 0.3,
-                child: PreferencesStorage.isCompactPreview
-                    ? NoteCardWidgetCompact(
-                        note: note, index: index, isSelected: isSelected)
-                    : NoteCardWidget(
-                        note: note, index: index, isSelected: isSelected),
-              ),
-              onDragCompleted: () {},
-              child: DragTarget<int>(
+
+            Widget cardWidget = PreferencesStorage.isCompactPreview
+                ? NoteCardWidgetCompact(
+                    note: note,
+                    index: index,
+                    isSelected: isSelected,
+                    showDragHandle: _isSelectionMode,
+                  )
+                : NoteCardWidget(
+                    note: note,
+                    index: index,
+                    isSelected: isSelected,
+                    showDragHandle: _isSelectionMode,
+                  );
+
+            if (_isSelectionMode) {
+              return DragTarget<int>(
                 onAcceptWithDetails: (details) {
                   _onReorder(details.data, index);
                 },
                 builder: (context, candidateData, rejectedData) {
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => _onNoteTap(note, index),
-                    onLongPress: () => _onNoteLongPress(note),
-                    child: PreferencesStorage.isCompactPreview
-                        ? NoteCardWidgetCompact(
-                            note: note, index: index, isSelected: isSelected)
-                        : NoteCardWidget(
-                            note: note, index: index, isSelected: isSelected),
+                  return LongPressDraggable<int>(
+                    data: index,
+                    feedback: Material(
+                      elevation: 6,
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        width: (constraints.maxWidth - 24) / crossAxisCount - 4,
+                        child: Opacity(
+                          opacity: 0.85,
+                          child: PreferencesStorage.isCompactPreview
+                              ? NoteCardWidgetCompact(
+                                  note: note, index: index, isSelected: false)
+                              : NoteCardWidget(
+                                  note: note, index: index, isSelected: false),
+                        ),
+                      ),
+                    ),
+                    childWhenDragging: Opacity(
+                      opacity: 0.3,
+                      child: cardWidget,
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _onNoteTap(note, index),
+                      child: cardWidget,
+                    ),
                   );
                 },
-              ),
+              );
+            }
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _onNoteTap(note, index),
+              onLongPress: () => _onNoteLongPress(note),
+              child: cardWidget,
             );
           },
         );

@@ -106,6 +106,8 @@ const List<NoteColorPreset> allNoteColorPresets = [
 
 class NotesColor extends ChangeNotifier {
   static const int colorsPerPreset = 5;
+  static int get specialWhiteIndex => allNoteColorPresets.length * colorsPerPreset;
+  static int get specialBlackIndex => allNoteColorPresets.length * colorsPerPreset + 1;
 
   static Color getNoteColor({
     required int notIndex,
@@ -119,6 +121,10 @@ class NotesColor extends ChangeNotifier {
     if (!PreferencesStorage.isColorful && fixedColorIndex == null) {
       return cs.surfaceContainerHigh;
     }
+
+    // Special sentinel values for pure white / black
+    if (fixedColorIndex == specialWhiteIndex) return Colors.white;
+    if (fixedColorIndex == specialBlackIndex) return Colors.black;
 
     // Global fixedColorIndex: decode preset and position within it
     if (fixedColorIndex != null && fixedColorIndex >= 0) {

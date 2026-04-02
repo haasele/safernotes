@@ -29,12 +29,14 @@ class NoteTileWidget extends StatelessWidget {
   final SafeNote note;
   final int index;
   final bool isSelected;
+  final bool showDragHandle;
 
   const NoteTileWidget({
     Key? key,
     required this.note,
     required this.index,
     this.isSelected = false,
+    this.showDragHandle = false,
   }) : super(key: key);
 
   @override
@@ -125,6 +127,17 @@ class NoteTileWidget extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.all(2),
                 child: Icon(Icons.check, size: 16, color: cs.onPrimary),
+              ),
+            ),
+          if (showDragHandle)
+            Positioned(
+              top: 0,
+              bottom: 0,
+              right: 8,
+              child: Icon(
+                Icons.drag_handle,
+                size: 20,
+                color: fontColor.withAlpha(120),
               ),
             ),
         ],
