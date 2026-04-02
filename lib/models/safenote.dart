@@ -18,12 +18,13 @@ import 'package:safenotes/encryption/aes_encryption.dart';
 const String tableNotes = 'safe_notes';
 
 class NoteFields {
-  static final List<String> values = [id, title, description, time];
+  static final List<String> values = [id, title, description, time, colorIndex];
 
   static const String id = '_id';
   static const String title = 'title';
   static const String description = 'description';
   static const String time = 'time';
+  static const String colorIndex = 'colorIndex';
 }
 
 class SafeNote {
@@ -31,12 +32,14 @@ class SafeNote {
   final String title;
   final String description;
   final DateTime createdTime;
+  final int? colorIndex;
 
   const SafeNote({
     this.id,
     required this.title,
     required this.description,
     required this.createdTime,
+    this.colorIndex,
   });
 
   SafeNote copy({
@@ -44,11 +47,14 @@ class SafeNote {
     String? title,
     String? description,
     DateTime? createdTime,
+    int? colorIndex,
+    bool clearColor = false,
   }) => SafeNote(
     id: id ?? this.id,
     title: title ?? this.title,
     description: description ?? this.description,
     createdTime: createdTime ?? this.createdTime,
+    colorIndex: clearColor ? null : (colorIndex ?? this.colorIndex),
   );
 
   static SafeNote fromJsonAndDecrypt(Map<String, dynamic> json) {
@@ -63,6 +69,7 @@ class SafeNote {
         PhraseHandler.getPass,
       ),
       createdTime: DateTime.parse(json[NoteFields.time] as String),
+      colorIndex: json[NoteFields.colorIndex] as int?,
     );
   }
 
@@ -70,21 +77,19 @@ class SafeNote {
     String passphrase = PhraseHandler.getPass;
     return {
       NoteFields.id: id,
-      NoteFields.title: encryptAES(title, passphrase), //title,
-      NoteFields.description: encryptAES(
-        description,
-        passphrase,
-      ), //description,
+      NoteFields.title: encryptAES(title, passphrase),
+      NoteFields.description: encryptAES(description, passphrase),
       NoteFields.time: createdTime.toIso8601String(),
+      NoteFields.colorIndex: colorIndex,
     };
   }
 
   Map<String, dynamic> toJson() {
     return {
-      //"${NoteFields.id}": this.id,
       NoteFields.title: encryptAES(title, PhraseHandler.getPass),
       NoteFields.description: encryptAES(description, PhraseHandler.getPass),
       NoteFields.time: createdTime.toIso8601String(),
+      NoteFields.colorIndex: colorIndex,
     };
   }
 
@@ -109,6 +114,7 @@ class SafeNote {
             )
           : json[NoteFields.description] as String,
       createdTime: DateTime.parse(json[NoteFields.time] as String),
+      colorIndex: json[NoteFields.colorIndex] as int?,
     );
   }
 }

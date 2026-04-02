@@ -31,8 +31,8 @@ class ColorPallet extends StatefulWidget {
 }
 
 class ColorPalletState extends State<ColorPallet> {
-  var _selectedIndex = PreferencesStorage.colorfulNotesColorIndex;
-  var items = allNotesColorTheme;
+  var _selectedIndex = PreferencesStorage.colorfulNotesColorIndex
+      .clamp(0, allNoteColorPresets.length - 1);
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +64,7 @@ class ColorPalletState extends State<ColorPallet> {
         ),
         CustomSettingsSection(
           child: Column(
-            children: [_colourPreview(), _buildColourComboList(context)],
+            children: [_colourPreview(), _buildPresetList(context)],
           ),
         ),
       ],
@@ -73,6 +73,15 @@ class ColorPalletState extends State<ColorPallet> {
 
   Widget _colourPreview() {
     final cs = Theme.of(context).colorScheme;
+    final brightness = Theme.of(context).brightness;
+    final preset = allNoteColorPresets[_selectedIndex];
+
+    Color? dynamicSeed;
+    if (preset.isDynamic) {
+      dynamicSeed = cs.primary;
+    }
+    final colors = preset.generatePalette(brightness, dynamicSeed: dynamicSeed);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Card(
@@ -82,58 +91,35 @@ class ColorPalletState extends State<ColorPallet> {
           padding: const EdgeInsets.all(10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: _colorBox(),
+            children: _colorBoxes(colors),
           ),
         ),
       ),
     );
   }
 
-  List<Widget> _colorBox() {
+  List<Widget> _colorBoxes(List<Color> colors) {
     final double heightRatio = MediaQuery.of(context).size.height / 100;
     final double boxHeight = heightRatio * 5;
     const double radius = 20;
-    var first = const BorderRadius.horizontal(left: Radius.circular(radius));
-    var last = const BorderRadius.horizontal(right: Radius.circular(radius));
-    var colors = items[_selectedIndex].colorList;
 
-    List<Widget> colorPallets = [];
-
-    colorPallets.add(
-      Expanded(
-        child: Container(
-          decoration: BoxDecoration(color: colors[0], borderRadius: first),
-          height: boxHeight,
-        ),
-      ),
-    );
-    if (colors.length > 1) {
-      for (final color in colors.sublist(1, colors.length - 1)) {
-        colorPallets.add(
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(color: color),
-              height: boxHeight,
-            ),
-          ),
-        );
+    return List.generate(colors.length, (i) {
+      BorderRadius? br;
+      if (i == 0) {
+        br = const BorderRadius.horizontal(left: Radius.circular(radius));
+      } else if (i == colors.length - 1) {
+        br = const BorderRadius.horizontal(right: Radius.circular(radius));
       }
-    }
-    colorPallets.add(
-      Expanded(
+      return Expanded(
         child: Container(
-          decoration: BoxDecoration(
-            color: colors[colors.length - 1],
-            borderRadius: last,
-          ),
+          decoration: BoxDecoration(color: colors[i], borderRadius: br),
           height: boxHeight,
         ),
-      ),
-    );
-    return colorPallets;
+      );
+    });
   }
 
-  Widget _buildColourComboList(BuildContext context) {
+  Widget _buildPresetList(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -142,12 +128,14 @@ class ColorPalletState extends State<ColorPallet> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         clipBehavior: Clip.antiAlias,
         child: Column(
-          children: List.generate(items.length, (index) {
+          children: List.generate(allNoteColorPresets.length, (index) {
+            final preset = allNoteColorPresets[index];
             final isSelected = _selectedIndex == index;
             return ListTile(
-              title: Text(items[index].prefix.tr()),
-              subtitle: items[index].helper != null
-                  ? Text(items[index].helper!.tr())
+              leading: _presetIcon(preset),
+              title: Text(preset.name.tr()),
+              subtitle: preset.description != null
+                  ? Text(preset.description!.tr())
                   : null,
               trailing: isSelected
                   ? Icon(Icons.check, color: cs.primary)
@@ -155,10 +143,29 @@ class ColorPalletState extends State<ColorPallet> {
               onTap: () => setState(() {
                 PreferencesStorage.setColorfulNotesColorIndex(index);
                 _selectedIndex = index;
+                Provider.of<NotesColor>(context, listen: false)
+                    .setPresetIndex(index);
               }),
             );
           }),
         ),
+      ),
+    );
+  }
+
+  Widget _presetIcon(NoteColorPreset preset) {
+    if (preset.isDynamic) {
+      return Icon(
+        Icons.auto_awesome,
+        color: Theme.of(context).colorScheme.primary,
+      );
+    }
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: preset.seedColor,
+        shape: BoxShape.circle,
       ),
     );
   }

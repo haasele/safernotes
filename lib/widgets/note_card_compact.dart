@@ -26,40 +26,66 @@ import 'package:safenotes/utils/text_direction_util.dart';
 class NoteCardWidgetCompact extends StatelessWidget {
   final SafeNote note;
   final int index;
+  final bool isSelected;
 
   const NoteCardWidgetCompact({
     Key? key,
     required this.note,
     required this.index,
+    this.isSelected = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final color = NotesColor.getNoteColor(
       notIndex: index,
-      fallback: Theme.of(context).colorScheme.surfaceContainerHigh,
+      context: context,
+      fixedColorIndex: note.colorIndex,
     );
     final fontColor = getFontColorForBackground(color);
     final previewText = note.title == ' ' ? note.description : note.title;
+    final cs = Theme.of(context).colorScheme;
 
     return Card(
-      shadowColor: Theme.of(context).colorScheme.shadow,
+      shadowColor: cs.shadow,
       color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: AutoSizeText(
-          sanitize(previewText),
-          textDirection: getTextDirecton(previewText),
-          style: TextStyle(
-            color: fontColor,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isSelected
+            ? BorderSide(color: cs.primary, width: 2)
+            : BorderSide.none,
+      ),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: AutoSizeText(
+              sanitize(previewText),
+              textDirection: getTextDirecton(previewText),
+              style: TextStyle(
+                color: fontColor,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              minFontSize: 15,
+              maxLines: 2,
+              overflow: TextOverflow.clip,
+            ),
           ),
-          minFontSize: 15,
-          maxLines: 2,
-          overflow: TextOverflow.clip,
-        ),
+          if (isSelected)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cs.primary,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(2),
+                child: Icon(Icons.check, size: 16, color: cs.onPrimary),
+              ),
+            ),
+        ],
       ),
     );
   }

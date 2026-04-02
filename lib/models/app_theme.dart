@@ -21,8 +21,12 @@ enum ThemeFlavor { system, materialYouLight, materialYouDark, pitchBlack }
 
 class ThemeProvider extends ChangeNotifier {
   ThemeFlavor _flavor = ThemeFlavor.values[PreferencesStorage.themeFlavor];
+  ColorScheme? _dynamicLight;
+  ColorScheme? _dynamicDark;
 
   ThemeFlavor get flavor => _flavor;
+  ColorScheme? get dynamicLight => _dynamicLight;
+  ColorScheme? get dynamicDark => _dynamicDark;
 
   ThemeMode get themeMode {
     switch (_flavor) {
@@ -36,11 +40,27 @@ class ThemeProvider extends ChangeNotifier {
     }
   }
 
-  ThemeData get lightTheme => AppThemes.materialYouLight;
+  ThemeData get lightTheme {
+    if (_dynamicLight != null) {
+      return ThemeData(useMaterial3: true, colorScheme: _dynamicLight);
+    }
+    return AppThemes.materialYouLight;
+  }
 
   ThemeData get darkTheme {
-    if (_flavor == ThemeFlavor.pitchBlack) return AppThemes.pitchBlack;
+    if (_flavor == ThemeFlavor.pitchBlack) {
+      return AppThemes.buildPitchBlack(_dynamicDark);
+    }
+    if (_dynamicDark != null) {
+      return ThemeData(useMaterial3: true, colorScheme: _dynamicDark);
+    }
     return AppThemes.materialYouDark;
+  }
+
+  void setDynamicSchemes(ColorScheme? light, ColorScheme? dark) {
+    _dynamicLight = light;
+    _dynamicDark = dark;
+    notifyListeners();
   }
 
   void setFlavor(ThemeFlavor flavor) {
@@ -51,12 +71,12 @@ class ThemeProvider extends ChangeNotifier {
 }
 
 class AppThemes {
-  static const Color _seedColor = Color(0xFF88C0D0);
+  static const Color seedColor = Color(0xFF88C0D0);
 
   static final ThemeData materialYouLight = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: _seedColor,
+      seedColor: seedColor,
       brightness: Brightness.light,
     ),
   );
@@ -64,16 +84,17 @@ class AppThemes {
   static final ThemeData materialYouDark = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: _seedColor,
+      seedColor: seedColor,
       brightness: Brightness.dark,
     ),
   );
 
-  static final ThemeData pitchBlack = () {
-    final baseScheme = ColorScheme.fromSeed(
-      seedColor: _seedColor,
-      brightness: Brightness.dark,
-    );
+  static ThemeData buildPitchBlack(ColorScheme? baseDynamic) {
+    final baseScheme = baseDynamic ??
+        ColorScheme.fromSeed(
+          seedColor: seedColor,
+          brightness: Brightness.dark,
+        );
     return ThemeData(
       useMaterial3: true,
       colorScheme: baseScheme.copyWith(
@@ -108,5 +129,5 @@ class AppThemes {
         color: Colors.black,
       ),
     );
-  }();
+  }
 }

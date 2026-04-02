@@ -35,6 +35,7 @@ import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/widgets/drawer.dart';
 import 'package:safenotes/widgets/note_card.dart';
 import 'package:safenotes/widgets/note_card_compact.dart';
+import 'package:safenotes/widgets/note_color_picker.dart';
 import 'package:safenotes/widgets/note_tile.dart';
 import 'package:safenotes/widgets/note_tile_compact.dart';
 import 'package:safenotes/widgets/search_widget.dart';
@@ -49,7 +50,7 @@ class HomePage extends StatefulWidget {
   HomePageState createState() => HomePageState();
 }
 
-class HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late List<SafeNote> notes;
   late List<SafeNote> allnotes;
   bool isLoading = false;
@@ -58,7 +59,10 @@ class HomePageState extends State<HomePage> {
   bool isNewFirst = PreferencesStorage.isNewFirst;
   bool isGridView = PreferencesStorage.isGridView;
   final importPassphraseController = TextEditingController();
-  //bool isListner = false;
+
+  bool _isSelectionMode = false;
+  final Set<int> _selectedNoteIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -72,8 +76,6 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<void> _sortAndStoreNotes() async {
-    // storing copy of notes in allnotes so that it does not change while doing search
-    // show recently created notes first
     List<SafeNote> tmpNotes;
     if (isNewFirst) {
       tmpNotes = await NotesDatabase.instance.decryptReadAllNotes()
@@ -87,29 +89,173 @@ class HomePageState extends State<HomePage> {
     });
   }
 
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedNoteIds.clear();
+    });
+  }
+
+  void _toggleSelection(SafeNote note) {
+    if (note.id == null) return;
+    setState(() {
+      if (_selectedNoteIds.contains(note.id)) {
+        _selectedNoteIds.remove(note.id);
+        if (_selectedNoteIds.isEmpty) _isSelectionMode = false;
+      } else {
+        _selectedNoteIds.add(note.id!);
+      }
+    });
+  }
+
+  void _enterSelectionMode(SafeNote note) {
+    if (note.id == null) return;
+    setState(() {
+      _isSelectionMode = true;
+      _selectedNoteIds.add(note.id!);
+    });
+  }
+
+  void _selectAll() {
+    setState(() {
+      _selectedNoteIds.addAll(
+        notes.where((n) => n.id != null).map((n) => n.id!),
+      );
+    });
+  }
+
+  Future<void> _bulkDelete() async {
+    final count = _selectedNoteIds.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete Notes'.tr()),
+        content: Text('Delete $count selected notes?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel'.tr()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: Text('Delete'.tr()),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await NotesDatabase.instance.deleteMultiple(_selectedNoteIds.toList());
+      _exitSelectionMode();
+      await refreshNotes();
+    }
+  }
+
+  Future<void> _bulkChangeColor() async {
+    final colorIndex = await showNoteColorPicker(context);
+    if (colorIndex == null) return;
+
+    final ids = _selectedNoteIds.toList();
+    final dbColorIndex = colorIndex == -1 ? null : colorIndex;
+    await NotesDatabase.instance.updateColorIndex(ids, dbColorIndex);
+    _exitSelectionMode();
+    await refreshNotes();
+  }
+
+  void _onNoteTap(SafeNote note) async {
+    if (_isSelectionMode) {
+      _toggleSelection(note);
+      return;
+    }
+    await Navigator.pushNamed(
+      context,
+      '/viewnote',
+      arguments: NoteDetailPageArguments(
+        note: note,
+        sessionStream: widget.sessionStateStream,
+      ),
+    );
+    refreshNotes();
+  }
+
+  void _onNoteLongPress(SafeNote note) {
+    if (!_isSelectionMode) {
+      _enterSelectionMode(note);
+    } else {
+      _toggleSelection(note);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     Provider.of<NotesColor>(context);
 
-    return GestureDetector(
-      onTap: dismissKeyboard,
-      onVerticalDragStart: dismissKeyboard,
-      onVerticalDragDown: dismissKeyboard,
-      child: Scaffold(
-        drawer: _buildDrawer(context),
-        appBar: AppBar(
-          title: Text('Safe Notes'.tr()),
-          actions: isLoading
-              ? null
-              : [
-                  //_DevSessionListner(),
-                  _gridListView(),
-                  _shortNotes(),
-                ],
+    return PopScope(
+      canPop: !_isSelectionMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _isSelectionMode) {
+          _exitSelectionMode();
+        }
+      },
+      child: GestureDetector(
+        onTap: dismissKeyboard,
+        onVerticalDragStart: dismissKeyboard,
+        onVerticalDragDown: dismissKeyboard,
+        child: Scaffold(
+          drawer: _isSelectionMode ? null : _buildDrawer(context),
+          appBar: _isSelectionMode ? _buildSelectionAppBar() : _buildNormalAppBar(),
+          body: Column(children: [
+            if (!_isSelectionMode) _buildSearch(),
+            _handleAndBuildNotes(),
+          ]),
+          floatingActionButton: _isSelectionMode ? null : _addANewNoteButton(context),
         ),
-        body: Column(children: [_buildSearch(), _handleAndBuildNotes()]),
-        floatingActionButton: _addANewNoteButton(context),
       ),
+    );
+  }
+
+  PreferredSizeWidget _buildNormalAppBar() {
+    return AppBar(
+      title: Text('Safe Notes'.tr()),
+      actions: isLoading
+          ? null
+          : [
+              _gridListView(),
+              _shortNotes(),
+            ],
+    );
+  }
+
+  PreferredSizeWidget _buildSelectionAppBar() {
+    final cs = Theme.of(context).colorScheme;
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: _exitSelectionMode,
+      ),
+      title: Text('${_selectedNoteIds.length} ${'selected'.tr()}'),
+      backgroundColor: cs.surfaceContainerHigh,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.select_all),
+          tooltip: 'Select all'.tr(),
+          onPressed: _selectAll,
+        ),
+        IconButton(
+          icon: const Icon(Icons.palette_outlined),
+          tooltip: 'Choose Color'.tr(),
+          onPressed: _bulkChangeColor,
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete_outline),
+          tooltip: 'Delete'.tr(),
+          onPressed: _bulkDelete,
+        ),
+      ],
     );
   }
 
@@ -126,22 +272,6 @@ class HomePageState extends State<HomePage> {
       },
     );
   }
-
-  // Widget _DevSessionListner() {
-  //   return IconButton(
-  //     icon: isListner ? Icon(Icons.toggle_on) : Icon(Icons.toggle_off),
-  //     onPressed: () {
-  //       if (isListner == true)
-  //         widget.sessionStateStream.add(SessionState.stopListening);
-  //       else
-  //         widget.sessionStateStream.add(SessionState.startListening);
-
-  //       setState(() {
-  //         this.isListner = !this.isListner;
-  //       });
-  //     },
-  //   );
-  // }
 
   Widget _shortNotes() {
     return IconButton(
@@ -164,8 +294,18 @@ class HomePageState extends State<HomePage> {
     return Expanded(
       child: !isLoading
           ? notes.isEmpty
-                ? Text(noNotes, style: const TextStyle(fontSize: fontSize))
-                : (isGridView ? _buildNotes() : _buildNotesTile())
+                ? Center(
+                    child: Text(
+                      noNotes,
+                      style: const TextStyle(fontSize: fontSize),
+                    ),
+                  )
+                : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: isGridView
+                        ? _buildNotes(key: const ValueKey('grid'))
+                        : _buildNotesTile(key: const ValueKey('list')),
+                  )
           : const Center(child: CircularProgressIndicator()),
     );
   }
@@ -241,59 +381,56 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildNotesTile() {
+  Widget _buildNotesTile({Key? key}) {
     return ListView.separated(
+      key: key,
       padding: const EdgeInsets.all(15),
       itemCount: notes.length,
       itemBuilder: ((context, index) {
         final note = notes[index];
-        return GestureDetector(
-          onTap: () async {
-            await Navigator.pushNamed(
-              context,
-              '/viewnote',
-              arguments: NoteDetailPageArguments(
-                note: note,
-                sessionStream: widget.sessionStateStream,
-              ),
-            );
-            refreshNotes();
-          },
+        final isSelected = _selectedNoteIds.contains(note.id);
+        return InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _onNoteTap(note),
+          onLongPress: () => _onNoteLongPress(note),
           child: PreferencesStorage.isCompactPreview
-              ? NoteTileWidgetCompact(note: note, index: index)
-              : NoteTileWidget(note: note, index: index),
+              ? NoteTileWidgetCompact(
+                  note: note, index: index, isSelected: isSelected)
+              : NoteTileWidget(
+                  note: note, index: index, isSelected: isSelected),
         );
       }),
       separatorBuilder: (BuildContext context, int index) {
-        return Container(height: 7, color: Colors.transparent);
+        return const SizedBox(height: 7);
       },
     );
   }
 
-  Widget _buildNotes() {
-    return AlignedGridView.count(
-      itemCount: notes.length,
-      padding: const EdgeInsets.all(12),
-      crossAxisCount: 2,
-      mainAxisSpacing: 4,
-      crossAxisSpacing: 4,
-      itemBuilder: (context, index) {
-        final note = notes[index];
-        return GestureDetector(
-          onTap: () async {
-            await Navigator.pushNamed(
-              context,
-              '/viewnote',
-              arguments: NoteDetailPageArguments(
-                note: note,
-                sessionStream: widget.sessionStateStream,
-              ),
+  Widget _buildNotes({Key? key}) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = (constraints.maxWidth / 180).floor().clamp(2, 6);
+        return AlignedGridView.count(
+          key: key,
+          itemCount: notes.length,
+          padding: const EdgeInsets.all(12),
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
+          itemBuilder: (context, index) {
+            final note = notes[index];
+            final isSelected = _selectedNoteIds.contains(note.id);
+            return InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _onNoteTap(note),
+              onLongPress: () => _onNoteLongPress(note),
+              child: PreferencesStorage.isCompactPreview
+                  ? NoteCardWidgetCompact(
+                      note: note, index: index, isSelected: isSelected)
+                  : NoteCardWidget(
+                      note: note, index: index, isSelected: isSelected),
             );
-            refreshNotes();
           },
-          child: PreferencesStorage.isCompactPreview
-              ? NoteCardWidgetCompact(note: note, index: index)
-              : NoteCardWidget(note: note, index: index),
         );
       },
     );
@@ -315,7 +452,7 @@ class HomePageState extends State<HomePage> {
     });
   }
 
-  void dismissKeyboard([var _]) {
+  void dismissKeyboard([dynamic _]) {
     final FocusScopeNode currentScope = FocusScope.of(context);
     if (!currentScope.hasPrimaryFocus && currentScope.hasFocus) {
       FocusManager.instance.primaryFocus?.unfocus();
