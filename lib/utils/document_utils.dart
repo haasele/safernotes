@@ -31,7 +31,15 @@ Document plainTextToDocument(String text) {
   if (text.trim().isEmpty) {
     return Document.blank();
   }
-  return markdownToDocument(text);
+  try {
+    final doc = markdownToDocument(text);
+    if (doc.root.children.isEmpty) {
+      return Document.blank();
+    }
+    return doc;
+  } catch (_) {
+    return Document.blank();
+  }
 }
 
 String documentToJson(Document document) {
@@ -54,7 +62,15 @@ String documentToPlainText(Document document) {
 
 Document resolveDescription(String description, String contentFormat) {
   if (contentFormat == 'document' && isDocumentJson(description)) {
-    return documentFromJson(description);
+    try {
+      final doc = documentFromJson(description);
+      if (doc.root.children.isEmpty) {
+        return Document.blank();
+      }
+      return doc;
+    } catch (_) {
+      return plainTextToDocument(description);
+    }
   }
   return plainTextToDocument(description);
 }

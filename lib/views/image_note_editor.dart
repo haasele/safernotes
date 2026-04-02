@@ -14,6 +14,7 @@
 // Dart imports:
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 // Flutter imports:
 import 'package:flutter/material.dart';
@@ -22,15 +23,11 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_session_timeout/local_session_timeout.dart';
-import 'package:path_provider/path_provider.dart';
 
 // Project imports:
+import 'package:safenotes/data/attachment_handler.dart';
 import 'package:safenotes/data/database_handler.dart';
-import 'package:safenotes/data/preference_and_config.dart';
-import 'package:safenotes/encryption/aes_encryption.dart';
-import 'package:safenotes/models/attachment.dart';
 import 'package:safenotes/models/safenote.dart';
-import 'package:uuid/uuid.dart';
 
 class ImageNoteEditor extends StatefulWidget {
   final StreamController<SessionState> sessionStateStream;
@@ -51,12 +48,44 @@ class _ImageNoteEditorState extends State<ImageNoteEditor> {
   final _captionController = TextEditingController();
   final _picker = ImagePicker();
   File? _imageFile;
+  Uint8List? _existingImageBytes;
+  bool _loadingExisting = false;
+
+  bool get _hasImage => _imageFile != null || _existingImageBytes != null;
 
   @override
   void initState() {
     super.initState();
     if (widget.note != null) {
       _titleController.text = widget.note!.title;
+      final desc = widget.note!.description;
+      if (desc != 'image_note' && desc.isNotEmpty) {
+        _captionController.text = desc;
+      }
+      _loadExistingImage();
+    }
+  }
+
+  Future<void> _loadExistingImage() async {
+    if (widget.note?.id == null) return;
+    setState(() => _loadingExisting = true);
+    try {
+      final attachments = await NotesDatabase.instance
+          .getAttachmentsForNote(widget.note!.id!);
+      if (attachments.isNotEmpty) {
+        final bytes = await AttachmentHandler.instance
+            .decryptAndReadFile(attachments.first.storagePath);
+        if (mounted) {
+          setState(() {
+            _existingImageBytes = bytes;
+            _loadingExisting = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _loadingExisting = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingExisting = false);
     }
   }
 
@@ -74,12 +103,15 @@ class _ImageNoteEditorState extends State<ImageNoteEditor> {
       maxHeight: 2048,
     );
     if (picked != null) {
-      setState(() => _imageFile = File(picked.path));
+      setState(() {
+        _imageFile = File(picked.path);
+        _existingImageBytes = null;
+      });
     }
   }
 
   Future<void> _save() async {
-    if (_imageFile == null) return;
+    if (!_hasImage) return;
 
     final navigator = Navigator.of(context);
     final title = _titleController.text.isEmpty
@@ -87,40 +119,47 @@ class _ImageNoteEditorState extends State<ImageNoteEditor> {
         : _titleController.text;
     final caption = _captionController.text;
 
-    final note = SafeNote(
-      title: title,
-      description: caption.isEmpty ? 'image_note' : caption,
-      createdTime: DateTime.now(),
-      noteType: 'image',
-      contentFormat: 'plain',
-    );
+    final isEditing = widget.note != null;
 
-    final saved = await NotesDatabase.instance.encryptAndStore(note);
-
-    if (saved.id != null) {
-      final dir = await getApplicationDocumentsDirectory();
-      final attachDir = Directory('${dir.path}/attachments/${saved.id}');
-      if (!await attachDir.exists()) {
-        await attachDir.create(recursive: true);
-      }
-
-      final sourceBytes = await _imageFile!.readAsBytes();
-      final encrypted = encryptAES(
-        String.fromCharCodes(sourceBytes),
-        PhraseHandler.getPass,
-      );
-      final encPath = '${attachDir.path}/${const Uuid().v4()}.enc';
-      await File(encPath).writeAsString(encrypted);
-
-      final ext = _imageFile!.path.split('.').last.toLowerCase();
-      await NotesDatabase.instance.insertAttachment(NoteAttachment(
-        noteId: saved.id!,
-        fileName: 'image.$ext',
-        storagePath: encPath,
-        mimeType: 'image/$ext',
-        fileSize: sourceBytes.length,
+    if (isEditing) {
+      final updated = widget.note!.copy(
+        title: title,
+        description: caption.isEmpty ? 'image_note' : caption,
         createdTime: DateTime.now(),
-      ));
+      );
+      await NotesDatabase.instance.encryptAndUpdate(updated);
+
+      if (_imageFile != null) {
+        await AttachmentHandler.instance.deleteAllForNote(widget.note!.id!);
+
+        final ext = _imageFile!.path.split('.').last.toLowerCase();
+        await AttachmentHandler.instance.encryptAndStoreFile(
+          noteId: widget.note!.id!,
+          sourceFile: _imageFile!,
+          fileName: 'image.$ext',
+          mimeType: 'image/$ext',
+        );
+      }
+    } else {
+      final note = SafeNote(
+        title: title,
+        description: caption.isEmpty ? 'image_note' : caption,
+        createdTime: DateTime.now(),
+        noteType: 'image',
+        contentFormat: 'plain',
+      );
+
+      final saved = await NotesDatabase.instance.encryptAndStore(note);
+
+      if (saved.id != null && _imageFile != null) {
+        final ext = _imageFile!.path.split('.').last.toLowerCase();
+        await AttachmentHandler.instance.encryptAndStoreFile(
+          noteId: saved.id!,
+          sourceFile: _imageFile!,
+          fileName: 'image.$ext',
+          mimeType: 'image/$ext',
+        );
+      }
     }
 
     navigator.pop();
@@ -134,7 +173,7 @@ class _ImageNoteEditorState extends State<ImageNoteEditor> {
       appBar: AppBar(
         title: Text('Image Note'.tr()),
         actions: [
-          if (_imageFile != null)
+          if (_hasImage)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               child: ElevatedButton(
@@ -169,26 +208,79 @@ class _ImageNoteEditorState extends State<ImageNoteEditor> {
             ),
             const Divider(),
             Expanded(
-              child: _imageFile != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.file(
-                        _imageFile!,
-                        fit: BoxFit.contain,
-                      ),
-                    )
-                  : _buildPickerOptions(cs),
+              child: _loadingExisting
+                  ? const Center(child: CircularProgressIndicator())
+                  : _hasImage
+                      ? _buildImagePreview()
+                      : _buildPickerOptions(cs),
             ),
-            if (_imageFile != null) ...[
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _captionController,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  hintText: 'Add a caption...'.tr(),
-                ),
+            if (_hasImage) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _captionController,
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        hintText: 'Add a caption...'.tr(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Change image',
+                    onPressed: () => _showPickerSheet(cs),
+                  ),
+                ],
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagePreview() {
+    if (_imageFile != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.file(_imageFile!, fit: BoxFit.contain),
+      );
+    }
+    if (_existingImageBytes != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.memory(_existingImageBytes!, fit: BoxFit.contain),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  void _showPickerSheet(ColorScheme cs) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: Text('Camera'.tr()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: Text('Gallery'.tr()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
           ],
         ),
       ),

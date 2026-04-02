@@ -27,10 +27,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 // Project imports:
+import 'package:safenotes/data/attachment_handler.dart';
 import 'package:safenotes/data/database_handler.dart';
-import 'package:safenotes/data/preference_and_config.dart';
-import 'package:safenotes/encryption/aes_encryption.dart';
-import 'package:safenotes/models/attachment.dart';
 import 'package:safenotes/models/safenote.dart';
 import 'package:uuid/uuid.dart';
 
@@ -62,13 +60,14 @@ class _AudioNoteEditorState extends State<AudioNoteEditor> {
   Duration _playDuration = Duration.zero;
   Timer? _durationTimer;
   List<double> _waveformData = [];
+  bool _loadingExisting = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.note != null) {
       _titleController.text = widget.note!.title;
-      _hasRecording = true;
+      _loadExistingAudio();
     }
     _player.onPositionChanged.listen((pos) {
       if (mounted) setState(() => _playPosition = pos);
@@ -79,6 +78,36 @@ class _AudioNoteEditorState extends State<AudioNoteEditor> {
     _player.onPlayerComplete.listen((_) {
       if (mounted) setState(() => _isPlaying = false);
     });
+  }
+
+  Future<void> _loadExistingAudio() async {
+    if (widget.note?.id == null) return;
+    setState(() => _loadingExisting = true);
+    try {
+      final attachments = await NotesDatabase.instance
+          .getAttachmentsForNote(widget.note!.id!);
+      if (attachments.isNotEmpty) {
+        final bytes = await AttachmentHandler.instance
+            .decryptAndReadFile(attachments.first.storagePath);
+
+        final tmpDir = await getTemporaryDirectory();
+        final ext = attachments.first.fileName.split('.').last;
+        final tmpPath = '${tmpDir.path}/audio_play_${const Uuid().v4()}.$ext';
+        await File(tmpPath).writeAsBytes(bytes);
+
+        if (mounted) {
+          setState(() {
+            _recordingPath = tmpPath;
+            _hasRecording = true;
+            _loadingExisting = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _loadingExisting = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingExisting = false);
+    }
   }
 
   @override
@@ -143,39 +172,41 @@ class _AudioNoteEditorState extends State<AudioNoteEditor> {
         ? 'Audio Note'.tr()
         : _titleController.text;
 
-    final note = SafeNote(
-      title: title,
-      description: 'audio_note',
-      createdTime: DateTime.now(),
-      noteType: 'audio',
-      contentFormat: 'plain',
-    );
+    final sourceFile = File(_recordingPath!);
+    final isEditing = widget.note != null;
 
-    final saved = await NotesDatabase.instance.encryptAndStore(note);
-
-    if (saved.id != null) {
-      final dir = await getApplicationDocumentsDirectory();
-      final attachDir = Directory('${dir.path}/attachments/${saved.id}');
-      if (!await attachDir.exists()) {
-        await attachDir.create(recursive: true);
-      }
-
-      final sourceBytes = await File(_recordingPath!).readAsBytes();
-      final encrypted = encryptAES(
-        String.fromCharCodes(sourceBytes),
-        PhraseHandler.getPass,
-      );
-      final encPath = '${attachDir.path}/${const Uuid().v4()}.enc';
-      await File(encPath).writeAsString(encrypted);
-
-      await NotesDatabase.instance.insertAttachment(NoteAttachment(
-        noteId: saved.id!,
-        fileName: 'recording.m4a',
-        storagePath: encPath,
-        mimeType: 'audio/m4a',
-        fileSize: sourceBytes.length,
+    if (isEditing) {
+      final updated = widget.note!.copy(
+        title: title,
         createdTime: DateTime.now(),
-      ));
+      );
+      await NotesDatabase.instance.encryptAndUpdate(updated);
+
+      await AttachmentHandler.instance.deleteAllForNote(widget.note!.id!);
+      await AttachmentHandler.instance.encryptAndStoreFile(
+        noteId: widget.note!.id!,
+        sourceFile: sourceFile,
+        fileName: 'recording.m4a',
+        mimeType: 'audio/m4a',
+      );
+    } else {
+      final note = SafeNote(
+        title: title,
+        description: 'audio_note',
+        createdTime: DateTime.now(),
+        noteType: 'audio',
+        contentFormat: 'plain',
+      );
+      final saved = await NotesDatabase.instance.encryptAndStore(note);
+
+      if (saved.id != null) {
+        await AttachmentHandler.instance.encryptAndStoreFile(
+          noteId: saved.id!,
+          sourceFile: sourceFile,
+          fileName: 'recording.m4a',
+          mimeType: 'audio/m4a',
+        );
+      }
     }
 
     navigator.pop();
@@ -213,73 +244,75 @@ class _AudioNoteEditorState extends State<AudioNoteEditor> {
             ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _titleController,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Title'.tr(),
-              ),
-            ),
-            const Divider(),
-            const Spacer(),
-            if (_waveformData.isNotEmpty) _buildWaveform(cs),
-            const SizedBox(height: 20),
-            Text(
-              _isRecording
-                  ? _formatDuration(_recordDuration)
-                  : _hasRecording
-                      ? '${_formatDuration(_playPosition)} / ${_formatDuration(_playDuration)}'
-                      : '00:00',
-              style: TextStyle(
-                fontSize: 48,
-                fontWeight: FontWeight.w300,
-                color: cs.onSurface,
-              ),
-            ),
-            const SizedBox(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (_hasRecording && !_isRecording)
-                  IconButton.filled(
-                    onPressed: _togglePlayback,
-                    iconSize: 36,
-                    style: IconButton.styleFrom(
-                      backgroundColor: cs.secondaryContainer,
-                      foregroundColor: cs.onSecondaryContainer,
+      body: _loadingExisting
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _titleController,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
                     ),
-                    icon: Icon(
-                      _isPlaying ? Icons.pause : Icons.play_arrow,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'Title'.tr(),
                     ),
                   ),
-                const SizedBox(width: 24),
-                FloatingActionButton.large(
-                  heroTag: 'recordBtn',
-                  onPressed:
-                      _isRecording ? _stopRecording : _startRecording,
-                  backgroundColor:
-                      _isRecording ? cs.error : cs.primaryContainer,
-                  foregroundColor:
-                      _isRecording ? cs.onError : cs.onPrimaryContainer,
-                  child: Icon(
-                    _isRecording ? Icons.stop : Icons.mic,
-                    size: 36,
+                  const Divider(),
+                  const Spacer(),
+                  if (_waveformData.isNotEmpty) _buildWaveform(cs),
+                  const SizedBox(height: 20),
+                  Text(
+                    _isRecording
+                        ? _formatDuration(_recordDuration)
+                        : _hasRecording
+                            ? '${_formatDuration(_playPosition)} / ${_formatDuration(_playDuration)}'
+                            : '00:00',
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w300,
+                      color: cs.onSurface,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 40),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_hasRecording && !_isRecording)
+                        IconButton.filled(
+                          onPressed: _togglePlayback,
+                          iconSize: 36,
+                          style: IconButton.styleFrom(
+                            backgroundColor: cs.secondaryContainer,
+                            foregroundColor: cs.onSecondaryContainer,
+                          ),
+                          icon: Icon(
+                            _isPlaying ? Icons.pause : Icons.play_arrow,
+                          ),
+                        ),
+                      const SizedBox(width: 24),
+                      FloatingActionButton.large(
+                        heroTag: 'recordBtn',
+                        onPressed:
+                            _isRecording ? _stopRecording : _startRecording,
+                        backgroundColor:
+                            _isRecording ? cs.error : cs.primaryContainer,
+                        foregroundColor:
+                            _isRecording ? cs.onError : cs.onPrimaryContainer,
+                        child: Icon(
+                          _isRecording ? Icons.stop : Icons.mic,
+                          size: 36,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                ],
+              ),
             ),
-            const Spacer(),
-          ],
-        ),
-      ),
     );
   }
 

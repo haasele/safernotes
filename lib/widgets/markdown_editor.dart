@@ -189,23 +189,29 @@ class MarkdownNoteEditorState extends State<MarkdownNoteEditor> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cs = Theme.of(context).colorScheme;
 
-    return MobileToolbar(
-      editorState: _editorState,
-      backgroundColor: isDark ? cs.surface : Colors.white,
-      foregroundColor: isDark ? Colors.white70 : const Color(0xff676666),
-      itemHighlightColor: cs.primary,
-      primaryColor: cs.primary,
-      onPrimaryColor: cs.onPrimary,
-      toolbarItems: [
-        textDecorationMobileToolbarItem,
-        headingMobileToolbarItem,
-        todoListMobileToolbarItem,
-        listMobileToolbarItem,
-        linkMobileToolbarItem,
-        quoteMobileToolbarItem,
-        codeMobileToolbarItem,
-        dividerMobileToolbarItem,
-      ],
+    return SafeArea(
+      top: false,
+      child: Material(
+        color: isDark ? cs.surface : Colors.white,
+        child: MobileToolbar(
+          editorState: _editorState,
+          backgroundColor: isDark ? cs.surface : Colors.white,
+          foregroundColor: isDark ? Colors.white70 : const Color(0xff676666),
+          itemHighlightColor: cs.primary,
+          primaryColor: cs.primary,
+          onPrimaryColor: cs.onPrimary,
+          toolbarItems: [
+            textDecorationMobileToolbarItem,
+            headingMobileToolbarItem,
+            todoListMobileToolbarItem,
+            listMobileToolbarItem,
+            linkMobileToolbarItem,
+            quoteMobileToolbarItem,
+            codeMobileToolbarItem,
+            dividerMobileToolbarItem,
+          ],
+        ),
+      ),
     );
   }
 }

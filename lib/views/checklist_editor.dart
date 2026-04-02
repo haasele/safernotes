@@ -44,6 +44,7 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
   final _titleController = TextEditingController();
   late List<_CheckItem> _items;
   final _focusNodes = <FocusNode>[];
+  final _controllers = <TextEditingController>[];
 
   @override
   void initState() {
@@ -54,7 +55,7 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
     } else {
       _items = [_CheckItem(text: '', checked: false)];
     }
-    _syncFocusNodes();
+    _syncNodesAndControllers();
   }
 
   @override
@@ -62,6 +63,9 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
     _titleController.dispose();
     for (final fn in _focusNodes) {
       fn.dispose();
+    }
+    for (final ctrl in _controllers) {
+      ctrl.dispose();
     }
     super.dispose();
   }
@@ -87,24 +91,40 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
   }
 
   String _serializeItems() {
+    _syncItemsFromControllers();
     return jsonEncode(
       _items.map((i) => {'text': i.text, 'checked': i.checked}).toList(),
     );
   }
 
-  void _syncFocusNodes() {
+  void _syncItemsFromControllers() {
+    for (var i = 0; i < _items.length && i < _controllers.length; i++) {
+      _items[i] = _items[i].copyWith(text: _controllers[i].text);
+    }
+  }
+
+  void _syncNodesAndControllers() {
     while (_focusNodes.length < _items.length) {
       _focusNodes.add(FocusNode());
     }
     while (_focusNodes.length > _items.length) {
       _focusNodes.removeLast().dispose();
     }
+
+    while (_controllers.length < _items.length) {
+      final idx = _controllers.length;
+      _controllers.add(TextEditingController(text: _items[idx].text));
+    }
+    while (_controllers.length > _items.length) {
+      _controllers.removeLast().dispose();
+    }
   }
 
   void _addItem(int afterIndex) {
+    _syncItemsFromControllers();
     setState(() {
       _items.insert(afterIndex + 1, _CheckItem(text: '', checked: false));
-      _syncFocusNodes();
+      _syncNodesAndControllers();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (afterIndex + 1 < _focusNodes.length) {
@@ -115,17 +135,28 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
 
   void _removeItem(int index) {
     if (_items.length <= 1) return;
+    _syncItemsFromControllers();
     setState(() {
       _items.removeAt(index);
-      _syncFocusNodes();
+      if (index < _controllers.length) {
+        _controllers.removeAt(index).dispose();
+      }
+      if (index < _focusNodes.length) {
+        _focusNodes.removeAt(index).dispose();
+      }
     });
   }
 
   void _reorderItem(int oldIndex, int newIndex) {
     if (newIndex > oldIndex) newIndex--;
+    _syncItemsFromControllers();
     setState(() {
       final item = _items.removeAt(oldIndex);
       _items.insert(newIndex, item);
+      final ctrl = _controllers.removeAt(oldIndex);
+      _controllers.insert(newIndex, ctrl);
+      final fn = _focusNodes.removeAt(oldIndex);
+      _focusNodes.insert(newIndex, fn);
     });
   }
 
@@ -224,7 +255,7 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
 
   Widget _buildCheckItem(_CheckItem item, int index, ColorScheme cs) {
     return Dismissible(
-      key: ValueKey('check_${item.hashCode}_$index'),
+      key: ObjectKey(_controllers[index]),
       direction: DismissDirection.endToStart,
       onDismissed: (_) => _removeItem(index),
       background: Container(
@@ -241,9 +272,9 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
             setState(() => _items[index] = item.copyWith(checked: val));
           },
         ),
-        title: TextFormField(
+        title: TextField(
+          controller: _controllers[index],
           focusNode: index < _focusNodes.length ? _focusNodes[index] : null,
-          initialValue: item.text,
           decoration: const InputDecoration(
             border: InputBorder.none,
             isDense: true,
@@ -254,10 +285,7 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
                 item.checked ? TextDecoration.lineThrough : null,
             color: item.checked ? cs.outline : cs.onSurface,
           ),
-          onChanged: (val) {
-            _items[index] = item.copyWith(text: val);
-          },
-          onFieldSubmitted: (_) => _addItem(index),
+          onSubmitted: (_) => _addItem(index),
         ),
         trailing: ReorderableDragStartListener(
           index: index,

@@ -85,17 +85,14 @@ class AddEditNotePageState extends State<AddEditNotePage> {
           NoteEditorState().addOrUpdateNote();
         }
       },
-      child: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Scaffold(
-          backgroundColor: bg,
-          resizeToAvoidBottomInset: true,
-          appBar: AppBar(
-            backgroundColor: bg ?? Theme.of(context).appBarTheme.backgroundColor,
-            actions: [buildButton()],
-          ),
-          body: _buildBody(),
+      child: Scaffold(
+        backgroundColor: bg,
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          backgroundColor: bg ?? Theme.of(context).appBarTheme.backgroundColor,
+          actions: [buildButton()],
         ),
+        body: _buildBody(),
       ),
     );
   }

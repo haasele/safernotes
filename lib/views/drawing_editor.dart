@@ -14,6 +14,7 @@
 // Dart imports:
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 // Flutter imports:
@@ -27,12 +28,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:perfect_freehand/perfect_freehand.dart';
 
 // Project imports:
+import 'package:safenotes/data/attachment_handler.dart';
 import 'package:safenotes/data/database_handler.dart';
-import 'package:safenotes/data/preference_and_config.dart';
-import 'package:safenotes/encryption/aes_encryption.dart';
-import 'package:safenotes/models/attachment.dart';
 import 'package:safenotes/models/safenote.dart';
-import 'package:uuid/uuid.dart';
 
 enum DrawingTool { pen, brush, eraser, line, rectangle, circle }
 
@@ -64,6 +62,9 @@ class _DrawingEditorState extends State<DrawingEditor> {
 
   Offset? _shapeStart;
 
+  Uint8List? _existingImageBytes;
+  bool _loadingExisting = false;
+
   final List<Color> _palette = [
     Colors.black,
     Colors.white,
@@ -82,6 +83,30 @@ class _DrawingEditorState extends State<DrawingEditor> {
     super.initState();
     if (widget.note != null) {
       _titleController.text = widget.note!.title;
+      _loadExistingDrawing();
+    }
+  }
+
+  Future<void> _loadExistingDrawing() async {
+    if (widget.note?.id == null) return;
+    setState(() => _loadingExisting = true);
+    try {
+      final attachments = await NotesDatabase.instance
+          .getAttachmentsForNote(widget.note!.id!);
+      if (attachments.isNotEmpty) {
+        final bytes = await AttachmentHandler.instance
+            .decryptAndReadFile(attachments.first.storagePath);
+        if (mounted) {
+          setState(() {
+            _existingImageBytes = bytes;
+            _loadingExisting = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _loadingExisting = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingExisting = false);
     }
   }
 
@@ -180,40 +205,47 @@ class _DrawingEditorState extends State<DrawingEditor> {
 
     final pngBytes = byteData.buffer.asUint8List();
 
-    final note = SafeNote(
-      title: title,
-      description: 'drawing_note',
-      createdTime: DateTime.now(),
-      noteType: 'drawing',
-      contentFormat: 'plain',
-    );
+    final tmpDir = await getTemporaryDirectory();
+    final tmpFile = File('${tmpDir.path}/drawing_tmp.png');
+    await tmpFile.writeAsBytes(pngBytes);
 
-    final saved = await NotesDatabase.instance.encryptAndStore(note);
+    final isEditing = widget.note != null;
 
-    if (saved.id != null) {
-      final dir = await getApplicationDocumentsDirectory();
-      final attachDir = Directory('${dir.path}/attachments/${saved.id}');
-      if (!await attachDir.exists()) {
-        await attachDir.create(recursive: true);
-      }
-
-      final encrypted = encryptAES(
-        String.fromCharCodes(pngBytes),
-        PhraseHandler.getPass,
-      );
-      final encPath = '${attachDir.path}/${const Uuid().v4()}.enc';
-      await File(encPath).writeAsString(encrypted);
-
-      await NotesDatabase.instance.insertAttachment(NoteAttachment(
-        noteId: saved.id!,
-        fileName: 'drawing.png',
-        storagePath: encPath,
-        mimeType: 'image/png',
-        fileSize: pngBytes.length,
+    if (isEditing) {
+      final updated = widget.note!.copy(
+        title: title,
         createdTime: DateTime.now(),
-      ));
+      );
+      await NotesDatabase.instance.encryptAndUpdate(updated);
+
+      await AttachmentHandler.instance.deleteAllForNote(widget.note!.id!);
+      await AttachmentHandler.instance.encryptAndStoreFile(
+        noteId: widget.note!.id!,
+        sourceFile: tmpFile,
+        fileName: 'drawing.png',
+        mimeType: 'image/png',
+      );
+    } else {
+      final note = SafeNote(
+        title: title,
+        description: 'drawing_note',
+        createdTime: DateTime.now(),
+        noteType: 'drawing',
+        contentFormat: 'plain',
+      );
+      final saved = await NotesDatabase.instance.encryptAndStore(note);
+
+      if (saved.id != null) {
+        await AttachmentHandler.instance.encryptAndStoreFile(
+          noteId: saved.id!,
+          sourceFile: tmpFile,
+          fileName: 'drawing.png',
+          mimeType: 'image/png',
+        );
+      }
     }
 
+    await tmpFile.delete().catchError((_) => tmpFile);
     navigator.pop();
   }
 
@@ -272,24 +304,36 @@ class _DrawingEditorState extends State<DrawingEditor> {
           _buildToolbar(cs),
           _buildColorPalette(cs),
           Expanded(
-            child: RepaintBoundary(
-              key: _canvasKey,
-              child: GestureDetector(
-                onPanStart: _onPanStart,
-                onPanUpdate: _onPanUpdate,
-                onPanEnd: _onPanEnd,
-                child: Container(
-                  color: isDark ? Colors.grey.shade900 : Colors.white,
-                  child: CustomPaint(
-                    painter: _DrawingPainter(
-                      strokes: _strokes,
-                      currentStroke: _currentStroke,
+            child: _loadingExisting
+                ? const Center(child: CircularProgressIndicator())
+                : RepaintBoundary(
+                    key: _canvasKey,
+                    child: GestureDetector(
+                      onPanStart: _onPanStart,
+                      onPanUpdate: _onPanUpdate,
+                      onPanEnd: _onPanEnd,
+                      child: Container(
+                        color: isDark ? Colors.grey.shade900 : Colors.white,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            if (_existingImageBytes != null)
+                              Image.memory(
+                                _existingImageBytes!,
+                                fit: BoxFit.contain,
+                              ),
+                            CustomPaint(
+                              painter: _DrawingPainter(
+                                strokes: _strokes,
+                                currentStroke: _currentStroke,
+                              ),
+                              size: Size.infinite,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    size: Size.infinite,
                   ),
-                ),
-              ),
-            ),
           ),
         ],
       ),
@@ -322,16 +366,24 @@ class _DrawingEditorState extends State<DrawingEditor> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Row(
         children: [
-          toolBtn(DrawingTool.pen, Icons.edit, 'Pen'.tr()),
-          toolBtn(DrawingTool.brush, Icons.brush, 'Brush'.tr()),
-          toolBtn(DrawingTool.eraser, Icons.auto_fix_normal, 'Eraser'.tr()),
-          const SizedBox(width: 8),
-          toolBtn(DrawingTool.line, Icons.horizontal_rule, 'Line'.tr()),
-          toolBtn(DrawingTool.rectangle, Icons.crop_square, 'Rectangle'.tr()),
-          toolBtn(DrawingTool.circle, Icons.circle_outlined, 'Circle'.tr()),
-          const Spacer(),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  toolBtn(DrawingTool.pen, Icons.edit, 'Pen'.tr()),
+                  toolBtn(DrawingTool.brush, Icons.brush, 'Brush'.tr()),
+                  toolBtn(DrawingTool.eraser, Icons.auto_fix_normal, 'Eraser'.tr()),
+                  const SizedBox(width: 8),
+                  toolBtn(DrawingTool.line, Icons.horizontal_rule, 'Line'.tr()),
+                  toolBtn(DrawingTool.rectangle, Icons.crop_square, 'Rectangle'.tr()),
+                  toolBtn(DrawingTool.circle, Icons.circle_outlined, 'Circle'.tr()),
+                ],
+              ),
+            ),
+          ),
           SizedBox(
-            width: 120,
+            width: 100,
             child: Slider(
               value: _strokeWidth,
               min: 1,
@@ -347,26 +399,29 @@ class _DrawingEditorState extends State<DrawingEditor> {
   Widget _buildColorPalette(ColorScheme cs) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Row(
-        children: _palette.map((c) {
-          final selected = _color == c;
-          return GestureDetector(
-            onTap: () => setState(() => _color = c),
-            child: Container(
-              width: 28,
-              height: 28,
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              decoration: BoxDecoration(
-                color: c,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: selected ? cs.primary : cs.outline,
-                  width: selected ? 3 : 1,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _palette.map((c) {
+            final selected = _color == c;
+            return GestureDetector(
+              onTap: () => setState(() => _color = c),
+              child: Container(
+                width: 28,
+                height: 28,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  color: c,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: selected ? cs.primary : cs.outline,
+                    width: selected ? 3 : 1,
+                  ),
                 ),
               ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -471,7 +526,6 @@ class _DrawingPainter extends CustomPainter {
       return;
     }
 
-    // Brush: simple path
     if (stroke.points.length < 2) return;
     final path = Path();
     path.moveTo(stroke.points.first.dx, stroke.points.first.dy);
