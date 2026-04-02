@@ -19,7 +19,6 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 // Project imports:
-import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/models/safenote.dart';
 import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/utils/string_utils.dart';
@@ -54,7 +53,7 @@ class NoteCardWidget extends StatelessWidget {
         : DateFormat.yMMMd().format(note.createdTime);
 
     return Card(
-      shadowColor: PreferencesStorage.isThemeDark ? Colors.white : Colors.black,
+      shadowColor: Theme.of(context).colorScheme.shadow,
       color: color,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Container(

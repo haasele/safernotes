@@ -20,10 +20,7 @@ import 'package:flutter/material.dart';
 // Package imports:
 import 'package:easy_localization/easy_localization.dart';
 import 'package:local_session_timeout/local_session_timeout.dart';
-import 'package:safenotes_nord_theme/safenotes_nord_theme.dart';
-
 // Project imports:
-import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/models/editor_state.dart';
 import 'package:safenotes/models/safenote.dart';
 import 'package:safenotes/widgets/note_widget.dart';
@@ -111,9 +108,8 @@ class AddEditNotePageState extends State<AddEditNotePage> {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: PreferencesStorage.isThemeDark
-              ? null
-              : NordColors.polarNight.darkest,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         ),
         onPressed: isFormValid ? onSaveCallback : null,
         child: Text(

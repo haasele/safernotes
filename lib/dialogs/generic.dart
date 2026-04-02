@@ -99,7 +99,6 @@ class GenericDialog extends StatelessWidget {
       text,
       textAlign: TextAlign.center,
       style: TextStyle(
-        color: Style.buttonTextStyle().color,
         fontWeight: FontWeight.bold,
         fontSize: fontSize,
       ),

@@ -20,8 +20,6 @@ import 'package:flutter/material.dart';
 // Package imports:
 import 'package:crypto/crypto.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:safenotes_nord_theme/safenotes_nord_theme.dart';
-
 // Project imports:
 import 'package:safenotes/data/database_handler.dart';
 import 'package:safenotes/data/preference_and_config.dart';
@@ -304,9 +302,7 @@ class ChangePassphraseState extends State<ChangePassphrase> {
         padding: const EdgeInsets.only(right: 10, top: 25, bottom: 20),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            shadowColor: PreferencesStorage.isThemeDark
-                ? NordColors.snowStorm.lightest
-                : NordColors.polarNight.darkest,
+            shadowColor: Theme.of(context).colorScheme.shadow,
             minimumSize: const Size(200, 50), //Size.fromHeight(50),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),

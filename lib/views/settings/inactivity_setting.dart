@@ -12,7 +12,6 @@
 */
 
 // Flutter imports:
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 // Package imports:
@@ -21,8 +20,6 @@ import 'package:settings_ui/settings_ui.dart';
 
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
-import 'package:safenotes/models/app_theme.dart';
-import 'package:safenotes/utils/styles.dart';
 
 class InactivityTimerSetting extends StatefulWidget {
   const InactivityTimerSetting({Key? key}) : super(key: key);
@@ -37,24 +34,15 @@ class _InactivityTimerSettingState extends State<InactivityTimerSetting> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Inactivity Timeout'.tr(), style: appBarTitle),
-      ),
+      appBar: AppBar(title: Text('Inactivity Timeout'.tr())),
       body: _settings(),
     );
   }
 
   Widget _settings() {
     return SettingsList(
-      platform: DevicePlatform.iOS,
-      lightTheme: const SettingsThemeData(),
-      darkTheme: SettingsThemeData(
-        settingsListBackground: AppThemes.darkSettingsScaffold,
-        settingsSectionBackground: AppThemes.darkSettingsCanvas,
-      ),
       sections: [
         SettingsSection(
-          //title: Text('Always on'),
           tiles: <SettingsTile>[
             SettingsTile.switchTile(
               initialValue: PreferencesStorage.isInactivityTimeoutOn,
@@ -78,64 +66,31 @@ class _InactivityTimerSettingState extends State<InactivityTimerSetting> {
   }
 
   Widget _buildTimeList(BuildContext context) {
-    return CupertinoPageScaffold(
-      child: SingleChildScrollView(
-        child: CupertinoFormSection.insetGrouped(
-          backgroundColor: PreferencesStorage.isThemeDark
-              ? AppThemes.darkSettingsScaffold
-              : const Color(0x00000000),
-          decoration: PreferencesStorage.isThemeDark
-              ? BoxDecoration(
-                  color: AppThemes.darkSettingsCanvas,
-                  borderRadius: BorderRadius.circular(15),
-                )
-              : null,
-          children: [
-            ...List.generate(
-              items.length,
-              (index) => GestureDetector(
-                onTap: () => setState(() {
-                  _selectedIndex = index;
-                  PreferencesStorage.setInactivityTimeoutIndex(index: index);
-                  setState(() {});
-                }),
-                child: AbsorbPointer(
-                  child: buildCupertinoFormRow(
-                    items[index].prefix,
-                    items[index].helper,
-                    selected: _selectedIndex == index,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildCupertinoFormRow(
-    String prefix,
-    String? helper, {
-    bool selected = false,
-  }) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(top: 5, bottom: 5),
-      child: CupertinoFormRow(
-        prefix: Text(prefix),
-        helper: helper != null
-            ? Text(helper, style: Theme.of(context).textTheme.bodySmall)
-            : null,
-        child: selected
-            ? const Padding(
-                padding: EdgeInsets.only(right: 5),
-                child: Icon(
-                  CupertinoIcons.check_mark,
-                  color: Color.fromARGB(255, 45, 118, 234),
-                  size: 20,
-                ),
-              )
-            : Container(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        color: cs.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: List.generate(items.length, (index) {
+            final isSelected = _selectedIndex == index;
+            return ListTile(
+              title: Text(items[index].prefix),
+              subtitle: items[index].helper != null
+                  ? Text(items[index].helper!)
+                  : null,
+              trailing: isSelected
+                  ? Icon(Icons.check, color: cs.primary)
+                  : null,
+              onTap: () => setState(() {
+                _selectedIndex = index;
+                PreferencesStorage.setInactivityTimeoutIndex(index: index);
+              }),
+            );
+          }),
+        ),
       ),
     );
   }

@@ -24,7 +24,6 @@ import 'package:provider/provider.dart';
 import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/models/app_theme.dart';
 import 'package:safenotes/utils/url_launcher.dart';
-import 'package:safenotes/views/settings/theme_setting.dart';
 
 class HomeDrawer extends StatefulWidget {
   final VoidCallback onImportCallback;
@@ -110,8 +109,16 @@ class HomeDrawerState extends State<HomeDrawer> {
                         ? Icons.light_mode_outlined
                         : Icons.dark_mode_outlined,
                     onClicked: () {
+                      final provider = Provider.of<ThemeProvider>(
+                        context,
+                        listen: false,
+                      );
                       Navigator.of(context).pop();
-                      showThemeBottomSheet(context);
+                      if (PreferencesStorage.isThemeDark) {
+                        provider.setFlavor(ThemeFlavor.materialYouLight);
+                      } else {
+                        provider.setFlavor(ThemeFlavor.materialYouDark);
+                      }
                     },
                   ),
                   _buildMenuItem(
@@ -206,9 +213,7 @@ class HomeDrawerState extends State<HomeDrawer> {
             fontWeight: FontWeight.bold,
             letterSpacing: -0.4,
             fontSize: 18,
-            color: PreferencesStorage.isThemeDark
-                ? Colors.white
-                : Colors.grey.shade600,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         trailing: toggle,
@@ -287,12 +292,10 @@ class HomeDrawerState extends State<HomeDrawer> {
   }
 
   Widget _divide({required double topPadding}) {
-    final bool isDarkTheme = PreferencesStorage.isThemeDark;
-
     return Padding(
       padding: EdgeInsets.only(top: topPadding),
       child: Divider(
-        color: isDarkTheme ? Colors.grey.shade700 : Colors.grey.shade500,
+        color: Theme.of(context).colorScheme.outlineVariant,
       ),
     );
   }

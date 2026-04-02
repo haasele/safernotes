@@ -28,7 +28,6 @@ import 'package:safenotes/dialogs/generic.dart';
 import 'package:safenotes/models/session.dart';
 import 'package:safenotes/utils/passphrase_util.dart';
 import 'package:safenotes/utils/snack_message.dart';
-import 'package:safenotes/utils/styles.dart';
 import 'package:safenotes/widgets/footer.dart';
 import 'package:safenotes/widgets/login_button.dart';
 
@@ -73,7 +72,7 @@ class SetEncryptionPhrasePageState extends State<SetEncryptionPhrasePage> {
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
-          title: Text('Set Passphrase'.tr(), style: appBarTitle),
+          title: Text('Set Passphrase'.tr()),
           centerTitle: true,
         ),
         body: CustomScrollView(

@@ -21,8 +21,6 @@ import 'package:flutter/material.dart';
 // Package imports:
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:safenotes_nord_theme/safenotes_nord_theme.dart';
-
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/utils/styles.dart';
@@ -111,7 +109,7 @@ class PreInactivityLogOff extends StatelessWidget {
         Expanded(
           child: ElevatedButton(
             style: ButtonStyle(
-              backgroundColor: WidgetStateProperty.all(NordColors.aurora.red),
+              backgroundColor: WidgetStateProperty.all(Colors.red),
             ),
             child: _buttonText(yesButtonText, buttonTextFontSize),
             onPressed: () {

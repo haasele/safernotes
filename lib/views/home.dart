@@ -32,7 +32,6 @@ import 'package:safenotes/models/safenote.dart';
 import 'package:safenotes/models/session.dart';
 import 'package:safenotes/routes/route_generator.dart';
 import 'package:safenotes/utils/notes_color.dart';
-import 'package:safenotes/utils/styles.dart';
 import 'package:safenotes/widgets/drawer.dart';
 import 'package:safenotes/widgets/note_card.dart';
 import 'package:safenotes/widgets/note_card_compact.dart';
@@ -99,7 +98,7 @@ class HomePageState extends State<HomePage> {
       child: Scaffold(
         drawer: _buildDrawer(context),
         appBar: AppBar(
-          title: Text('Safe Notes'.tr(), style: appBarTitle),
+          title: Text('Safe Notes'.tr()),
           actions: isLoading
               ? null
               : [

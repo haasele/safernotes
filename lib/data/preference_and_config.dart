@@ -50,6 +50,7 @@ class PreferencesStorage {
   static const _keyIsLocalDarkSwitchEnabled = 'isLocalDarkSwitchEnabled';
   static const _keyIsSystemDarkLightSwitchEnabled =
       'isSystemDarkLightSwitchEnabled';
+  static const _keyThemeFlavor = 'themeFlavor';
 
   static Future init() async =>
       _preferences = await SharedPreferences.getInstance();
@@ -76,17 +77,12 @@ class PreferencesStorage {
       await _preferences?.setInt(_keyColorfulNotesColorIndex, index);
 
   static bool get isThemeDark {
-    bool? isDark = _preferences?.getBool(_keyIsThemeDark);
-    bool isSystemDark =
-        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-        Brightness.dark;
-
-    if (isSystemDarkLightSwitchEnabled) {
-      return isSystemDark;
+    final flavor = themeFlavor;
+    if (flavor == 0) {
+      return WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+          Brightness.dark;
     }
-    if (isDark != null) return isDark;
-    return WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-        Brightness.dark;
+    return flavor >= 2; // materialYouDark or pitchBlack
   }
 
   static Future<void> setIsThemeDark(bool flag) async =>
@@ -225,6 +221,24 @@ class PreferencesStorage {
   static int get darkThemeEnum => _preferences?.getInt(_keyDarkThemeEnum) ?? 0;
   static Future<void> setDarkThemeEnum({required int index}) async =>
       await _preferences?.setInt(_keyDarkThemeEnum, index);
+
+  // ThemeFlavor: 0=system, 1=materialYouLight, 2=materialYouDark, 3=pitchBlack
+  static int get themeFlavor {
+    final stored = _preferences?.getInt(_keyThemeFlavor);
+    if (stored != null) return stored;
+    return _migrateThemeFlavor();
+  }
+
+  static int _migrateThemeFlavor() {
+    if (isSystemDarkLightSwitchEnabled) return 0;
+    if (isLocalDarkSwitchEnabled) {
+      return isDimTheme ? 2 : 3;
+    }
+    return 1;
+  }
+
+  static Future<void> setThemeFlavor(int index) async =>
+      await _preferences?.setInt(_keyThemeFlavor, index);
 
   static bool get isAutoRotate =>
       _preferences?.getBool(_keyIsAutoRotate) ?? false;

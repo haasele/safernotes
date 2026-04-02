@@ -14,12 +14,6 @@
 // Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
-import 'package:safenotes_nord_theme/safenotes_nord_theme.dart';
-
-// Project imports:
-import 'package:safenotes/data/preference_and_config.dart';
-
 class ButtonWidget extends StatelessWidget {
   final String text;
   final VoidCallback? onClicked;
@@ -29,26 +23,18 @@ class ButtonWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double topSpacing = 10.0;
-
     return Padding(
-      padding: const EdgeInsets.only(top: topSpacing),
-      child: SizedBox(
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            shadowColor: PreferencesStorage.isThemeDark
-                ? NordColors.snowStorm.lightest
-                : NordColors.polarNight.darkest,
-            minimumSize: const Size.fromHeight(50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            elevation: 5.0,
+      padding: const EdgeInsets.only(top: 10),
+      child: FilledButton(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          onPressed: onClicked,
-          child: FittedBox(
-            child: Text(text, style: const TextStyle(fontSize: 20)),
-          ),
+        ),
+        onPressed: onClicked,
+        child: FittedBox(
+          child: Text(text, style: const TextStyle(fontSize: 20)),
         ),
       ),
     );
