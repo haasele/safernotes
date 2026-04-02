@@ -27,11 +27,8 @@ class GenericDialog extends StatelessWidget {
   final IconData icon;
   final String message;
 
-  const GenericDialog({
-    Key? key,
-    required this.icon,
-    required this.message,
-  }) : super(key: key);
+  const GenericDialog({Key? key, required this.icon, required this.message})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -73,10 +70,7 @@ class GenericDialog extends StatelessWidget {
   Widget _body(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 10, bottom: 10),
-      child: Text(
-        message,
-        style: dialogBodyTextStyle,
-      ),
+      child: Text(message, style: dialogBodyTextStyle),
     );
   }
 
@@ -122,10 +116,7 @@ showGenericDialog({
     context: context,
     barrierDismissible: true,
     builder: (BuildContext context) {
-      return GenericDialog(
-        icon: icon,
-        message: message,
-      );
+      return GenericDialog(icon: icon, message: message);
     },
   );
 }

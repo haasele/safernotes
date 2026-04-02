@@ -38,10 +38,7 @@ class _InactivityTimerSettingState extends State<InactivityTimerSetting> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Inactivity Timeout'.tr(),
-          style: appBarTitle,
-        ),
+        title: Text('Inactivity Timeout'.tr(), style: appBarTitle),
       ),
       body: _settings(),
     );
@@ -67,15 +64,14 @@ class _InactivityTimerSettingState extends State<InactivityTimerSetting> {
                 setState(() {});
               },
               enabled: true,
-              description:
-                  Text('Close and open app for change to take effect'.tr()),
+              description: Text(
+                'Close and open app for change to take effect'.tr(),
+              ),
             ),
           ],
         ),
         CustomSettingsSection(
-          child: CustomSettingsTile(
-            child: _buildTimeList(context),
-          ),
+          child: CustomSettingsTile(child: _buildTimeList(context)),
         ),
       ],
     );
@@ -128,10 +124,7 @@ class _InactivityTimerSettingState extends State<InactivityTimerSetting> {
       child: CupertinoFormRow(
         prefix: Text(prefix),
         helper: helper != null
-            ? Text(
-                helper,
-                style: Theme.of(context).textTheme.bodySmall,
-              )
+            ? Text(helper, style: Theme.of(context).textTheme.bodySmall)
             : null,
         child: selected
             ? const Padding(

@@ -70,18 +70,14 @@ class ImportPassPhraseDialogState extends State<ImportPassPhraseDialog> {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: paddingTextTop),
-            child: Text(
-              titleHeading,
-              style: dialogHeadTextStyle,
-            ),
+            child: Text(titleHeading, style: dialogHeadTextStyle),
           ),
           Padding(
             padding: const EdgeInsets.only(
-                top: paddingTextTop, bottom: paddingTextTop),
-            child: Text(
-              description,
-              style: dialogBodyTextStyle,
+              top: paddingTextTop,
+              bottom: paddingTextTop,
             ),
+            child: Text(description, style: dialogBodyTextStyle),
           ),
           _buildPassField(context),
           _buildButtons(context),
@@ -96,8 +92,10 @@ class ImportPassPhraseDialogState extends State<ImportPassPhraseDialog> {
     final String inputBoxHint = 'Encryption Phrase'.tr();
 
     return Padding(
-      padding:
-          const EdgeInsets.only(top: paddingTextBox, bottom: paddingTextBox),
+      padding: const EdgeInsets.only(
+        top: paddingTextBox,
+        bottom: paddingTextBox,
+      ),
       child: Form(
         key: _formKey,
         child: TextFormField(
@@ -131,7 +129,8 @@ class ImportPassPhraseDialogState extends State<ImportPassPhraseDialog> {
     final form = _formKey.currentState!;
     if (form.validate()) {
       ImportPassPhraseHandler.setImportPassPhrase(
-          importPassphraseController.text);
+        importPassphraseController.text,
+      );
       Navigator.of(context).pop();
     }
   }
@@ -152,16 +151,19 @@ class ImportPassPhraseDialogState extends State<ImportPassPhraseDialog> {
     final String formCancelButtonText = 'Cancel'.tr();
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(paddingAroundButtonRow,
-          paddingAroundButtonRow, paddingAroundButtonRow, 0),
+      padding: const EdgeInsets.fromLTRB(
+        paddingAroundButtonRow,
+        paddingAroundButtonRow,
+        paddingAroundButtonRow,
+        0,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             child: ElevatedButton(
               style: ButtonStyle(
-                backgroundColor:
-                    MaterialStateProperty.all(NordColors.aurora.red),
+                backgroundColor: WidgetStateProperty.all(NordColors.aurora.red),
               ),
               child: _buttonText(formCancelButtonText, buttonTextFontSize),
               onPressed: () => Navigator.of(context).pop(),
@@ -185,10 +187,7 @@ class ImportPassPhraseDialogState extends State<ImportPassPhraseDialog> {
       textAlign: TextAlign.center,
       minFontSize: 8,
       maxLines: 1,
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: fontSize,
-      ),
+      style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize),
     );
   }
 

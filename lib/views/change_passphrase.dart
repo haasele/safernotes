@@ -90,8 +90,11 @@ class ChangePassphraseState extends State<ChangePassphrase> {
 
   void scrollToBottomIfOnScreenKeyboard() {
     if (MediaQuery.of(context).viewInsets.bottom > 0) {
-      _scrollController.animateTo(_scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300), curve: Curves.ease);
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.ease,
+      );
     }
   }
 
@@ -108,7 +111,9 @@ class ChangePassphraseState extends State<ChangePassphrase> {
           children: [
             Padding(
               padding: const EdgeInsets.only(
-                  top: paddingBetweenInputBox, bottom: 10),
+                top: paddingBetweenInputBox,
+                bottom: 10,
+              ),
               child: Text(
                 pageTitleName,
                 style: dialogHeadTextStyle.copyWith(
@@ -215,8 +220,8 @@ class ChangePassphraseState extends State<ChangePassphrase> {
     return passphrase == null || passphrase.length < minPassphraseLength
         ? minpCharacterMsg
         : (estimateBruteforceStrength(passphrase) < minPassphraseStrength)
-            ? tooWeakMsg
-            : null;
+        ? tooWeakMsg
+        : null;
   }
 
   Widget _buildNewConfirmPassField() {
@@ -246,8 +251,12 @@ class ChangePassphraseState extends State<ChangePassphrase> {
     );
   }
 
-  InputDecoration _inputBoxDecoration(BuildContext context, String inputFieldID,
-      String inputHintText, double inputBoxEdgeRadious) {
+  InputDecoration _inputBoxDecoration(
+    BuildContext context,
+    String inputFieldID,
+    String inputHintText,
+    double inputBoxEdgeRadious,
+  ) {
     bool? visibility;
 
     if (inputFieldID == 'first') {
@@ -299,8 +308,9 @@ class ChangePassphraseState extends State<ChangePassphrase> {
                 ? NordColors.snowStorm.lightest
                 : NordColors.polarNight.darkest,
             minimumSize: const Size(200, 50), //Size.fromHeight(50),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             elevation: 5.0, //StadiumBorder(),
           ),
           onPressed: _finalSublmitChange,

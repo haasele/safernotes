@@ -28,10 +28,7 @@ import 'package:safenotes/utils/styles.dart';
 class FileImportDialog extends StatelessWidget {
   final VoidCallback callback;
 
-  const FileImportDialog({
-    Key? key,
-    required this.callback,
-  }) : super(key: key);
+  const FileImportDialog({Key? key, required this.callback}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -48,11 +45,7 @@ class FileImportDialog extends StatelessWidget {
           padding: const EdgeInsets.all(paddingAllAround),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              _title(),
-              _body(),
-              _buildButtons(),
-            ],
+            children: [_title(), _body(), _buildButtons()],
           ),
         ),
       ),
@@ -64,10 +57,7 @@ class FileImportDialog extends StatelessWidget {
 
     return Align(
       alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: dialogHeadTextStyle,
-      ),
+      child: Text(title, style: dialogHeadTextStyle),
     );
   }
 
@@ -81,10 +71,7 @@ class FileImportDialog extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(top: topSpacing),
-        child: Text(
-          cautionMessage,
-          style: dialogBodyTextStyle,
-        ),
+        child: Text(cautionMessage, style: dialogBodyTextStyle),
       ),
     );
   }
@@ -106,16 +93,15 @@ class FileImportDialog extends StatelessWidget {
     return Text(
       text,
       textAlign: TextAlign.center,
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: fontSize,
-      ),
+      style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize),
     );
   }
 }
 
-Future<void> showImportDialog(BuildContext context,
-    {VoidCallback? homeRefresh}) async {
+Future<void> showImportDialog(
+  BuildContext context, {
+  VoidCallback? homeRefresh,
+}) async {
   return showDialog(
     context: context,
     barrierDismissible: true,
@@ -123,8 +109,9 @@ Future<void> showImportDialog(BuildContext context,
       return FileImportDialog(
         callback: () async {
           Navigator.of(contextChild).pop();
-          String? snackMessage =
-              await FileHandler().selectFileAndImport(context);
+          String? snackMessage = await FileHandler().selectFileAndImport(
+            context,
+          );
           if (homeRefresh != null) homeRefresh();
 
           // TODO: refactor without using BuildContexts across async gap

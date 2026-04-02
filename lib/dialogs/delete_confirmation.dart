@@ -27,10 +27,8 @@ import 'package:safenotes/utils/styles.dart';
 
 class DeleteConfirmationDialog extends StatelessWidget {
   final VoidCallback callback;
-  const DeleteConfirmationDialog({
-    Key? key,
-    required this.callback,
-  }) : super(key: key);
+  const DeleteConfirmationDialog({Key? key, required this.callback})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -72,10 +70,7 @@ class DeleteConfirmationDialog extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
-      child: Text(
-        title,
-        style: dialogHeadTextStyle,
-      ),
+      child: Text(title, style: dialogHeadTextStyle),
     );
   }
 
@@ -101,8 +96,12 @@ class DeleteConfirmationDialog extends StatelessWidget {
     final String deleteButtonText = 'Delete'.tr();
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(paddingAroundButtonRowLR,
-          paddingAroundButtonRowTop, paddingAroundButtonRowLR, 0),
+      padding: const EdgeInsets.fromLTRB(
+        paddingAroundButtonRowLR,
+        paddingAroundButtonRowTop,
+        paddingAroundButtonRowLR,
+        0,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -116,8 +115,7 @@ class DeleteConfirmationDialog extends StatelessWidget {
           Expanded(
             child: ElevatedButton(
               style: ButtonStyle(
-                backgroundColor:
-                    MaterialStateProperty.all(NordColors.aurora.red),
+                backgroundColor: WidgetStateProperty.all(NordColors.aurora.red),
               ),
               onPressed: callback,
               child: _buttonText(deleteButtonText, buttonTextFontSize),
@@ -134,10 +132,7 @@ class DeleteConfirmationDialog extends StatelessWidget {
       textAlign: TextAlign.center,
       minFontSize: 8,
       maxLines: 1,
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: fontSize,
-      ),
+      style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize),
     );
   }
 }

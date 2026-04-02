@@ -85,7 +85,9 @@ class HomeDrawerState extends State<HomeDrawer> {
               child: Column(
                 children: <Widget>[
                   _drawerHeader(
-                      topPadding: topHeadPadding, orientation: orientation),
+                    topPadding: topHeadPadding,
+                    orientation: orientation,
+                  ),
                   _divide(topPadding: bottomHeadPadding),
                   _buildMenuItem(
                     topPadding: height * 0.005,
@@ -194,10 +196,7 @@ class HomeDrawerState extends State<HomeDrawer> {
         contentPadding: const EdgeInsets.only(left: leftPaddingMenuItem),
         visualDensity: VisualDensity.compact,
         dense: true,
-        leading: Icon(
-          icon,
-          size: 27,
-        ),
+        leading: Icon(icon, size: 27),
         title: AutoSizeText(
           text,
           minFontSize: 8,
@@ -279,7 +278,7 @@ class HomeDrawerState extends State<HomeDrawer> {
                     ],
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ),

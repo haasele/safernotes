@@ -81,10 +81,7 @@ class NoteFormWidget extends StatelessWidget {
       // Use contextMenuBuilder to control which text selection toolbar are enabled
       // https://docs.flutter.dev/release/breaking-changes/context-menus#migration-guide
       // },
-      style: const TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: fontSize,
-      ),
+      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize),
       decoration: InputDecoration(
         border: InputBorder.none,
         hintText: titleHint,

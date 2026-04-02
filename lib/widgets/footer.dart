@@ -46,7 +46,7 @@ Widget footer({bool showVersion = false}) {
               '♥',
               style: style.copyWith(fontFamily: 'NotoMonochromaticEmoji'),
             ),
-            Text(onEarth, style: style)
+            Text(onEarth, style: style),
           ],
         ),
       ],

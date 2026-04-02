@@ -27,9 +27,9 @@ class BiometricAuth {
       await storage.read(key: _secureBiometricAuthKey) ?? '';
 
   static Future<void> setAuthKey() async => await storage.write(
-        key: _secureBiometricAuthKey,
-        value: PhraseHandler.getPass,
-      );
+    key: _secureBiometricAuthKey,
+    value: PhraseHandler.getPass,
+  );
 
   static Future<void> disable() async {
     await PreferencesStorage.setIsBiometricAuthEnabled(false);

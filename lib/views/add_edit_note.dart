@@ -33,7 +33,7 @@ class AddEditNotePage extends StatefulWidget {
   final SafeNote? note;
 
   const AddEditNotePage({Key? key, this.note, required this.sessionStateStream})
-      : super(key: key);
+    : super(key: key);
 
   @override
   AddEditNotePageState createState() => AddEditNotePageState();
@@ -61,7 +61,7 @@ class AddEditNotePageState extends State<AddEditNotePage> {
 
     return PopScope(
       canPop: true,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         if (didPop && isNoteNewOrContentChanged()) {
           NoteEditorState().addOrUpdateNote();
         }
@@ -92,19 +92,11 @@ class AddEditNotePageState extends State<AddEditNotePage> {
         sessionStateStream: widget.sessionStateStream,
         onChangedTitle: (title) => setState(() {
           this.title = title;
-          NoteEditorState.setState(
-            widget.note,
-            this.title,
-            description,
-          );
+          NoteEditorState.setState(widget.note, this.title, description);
         }),
         onChangedDescription: (description) => setState(() {
           this.description = description;
-          NoteEditorState.setState(
-            widget.note,
-            title,
-            this.description,
-          );
+          NoteEditorState.setState(widget.note, title, this.description);
         }),
       ),
     );

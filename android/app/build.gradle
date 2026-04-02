@@ -37,6 +37,15 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
     defaultConfig {
         applicationId "com.trisven.safenotes"
         minSdkVersion 25
@@ -58,7 +67,7 @@ android {
    }
    buildTypes {
        release {
-           signingConfig signingConfigs.release
+           signingConfig keystoreProperties['storeFile'] ? signingConfigs.release : signingConfigs.debug
        }
    }
 

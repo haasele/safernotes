@@ -69,10 +69,7 @@ class PreInactivityLogOff extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(top: topSpacing), //, right: 100),
-        child: Text(
-          title,
-          style: dialogHeadTextStyle,
-        ),
+        child: Text(title, style: dialogHeadTextStyle),
       ),
     );
   }
@@ -114,7 +111,7 @@ class PreInactivityLogOff extends StatelessWidget {
         Expanded(
           child: ElevatedButton(
             style: ButtonStyle(
-              backgroundColor: MaterialStateProperty.all(NordColors.aurora.red),
+              backgroundColor: WidgetStateProperty.all(NordColors.aurora.red),
             ),
             child: _buttonText(yesButtonText, buttonTextFontSize),
             onPressed: () {
@@ -126,10 +123,11 @@ class PreInactivityLogOff extends StatelessWidget {
         Expanded(
           child: ElevatedButton(
             child: _buttonText(noButtonText, buttonTextFontSize),
-            onPressed: () => Navigator.of(context)
-                .pop(true), // return false to dialog caller
+            onPressed: () => Navigator.of(
+              context,
+            ).pop(true), // return false to dialog caller
           ),
-        )
+        ),
       ],
     );
   }
@@ -140,10 +138,7 @@ class PreInactivityLogOff extends StatelessWidget {
       textAlign: TextAlign.center,
       minFontSize: 8,
       maxLines: 1,
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: fontSize,
-      ),
+      style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize),
     );
   }
 }
@@ -155,16 +150,13 @@ void _startTimer(BuildContext context) {
     _timer?.cancel();
   }
 
-  _timer = Timer.periodic(
-    const Duration(seconds: 1),
-    (timer) {
-      (_counter > 0) ? _counter-- : _timer?.cancel();
-      _controller.add(_counter.toString().padLeft(2, '0'));
-      if (_counter == 0) {
-        Navigator.of(context).pop();
-      }
-    },
-  );
+  _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    (_counter > 0) ? _counter-- : _timer?.cancel();
+    _controller.add(_counter.toString().padLeft(2, '0'));
+    if (_counter == 0) {
+      Navigator.of(context).pop();
+    }
+  });
 }
 
 Future<bool?> preInactivityLogOffAlert(BuildContext context) async {

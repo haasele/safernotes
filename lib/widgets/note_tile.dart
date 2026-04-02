@@ -29,11 +29,8 @@ class NoteTileWidget extends StatelessWidget {
   final SafeNote note;
   final int index;
 
-  const NoteTileWidget({
-    Key? key,
-    required this.note,
-    required this.index,
-  }) : super(key: key);
+  const NoteTileWidget({Key? key, required this.note, required this.index})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +41,10 @@ class NoteTileWidget extends StatelessWidget {
     DateTime now = DateTime.now();
     DateTime todayDate = DateTime(now.year, now.month, now.day);
     DateTime noteDate = DateTime(
-        note.createdTime.year, note.createdTime.month, note.createdTime.day);
+      note.createdTime.year,
+      note.createdTime.month,
+      note.createdTime.day,
+    );
     String time = (todayDate == noteDate)
         ? humanTime(
             time: note.createdTime,
@@ -92,11 +92,7 @@ class NoteTileWidget extends StatelessWidget {
           AutoSizeText(
             sanitize(note.description),
             textDirection: getTextDirecton(note.description),
-            style: TextStyle(
-              color: fontColor,
-              fontSize: 16,
-              height: 1.2,
-            ),
+            style: TextStyle(color: fontColor, fontSize: 16, height: 1.2),
             minFontSize: 16,
             maxLines: 2,
             overflow: TextOverflow.clip,

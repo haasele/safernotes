@@ -76,13 +76,13 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
     _isKeyboardFocused = widget.isKeyboardFocused ?? true;
 
     // BiometricAuth:
-    auth.isDeviceSupported().then(
-      (bool isSupported) {
-        setState(() => _supportState = isSupported
+    auth.isDeviceSupported().then((bool isSupported) {
+      setState(
+        () => _supportState = isSupported
             ? _BiometricState.supported
-            : _BiometricState.unsupported);
-      },
-    );
+            : _BiometricState.unsupported,
+      );
+    });
   }
 
   @override
@@ -109,10 +109,7 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
-          title: Text(
-            'Login'.tr(),
-            style: appBarTitle,
-          ),
+          title: Text('Login'.tr(), style: appBarTitle),
           centerTitle: true,
         ),
         body: CustomScrollView(
@@ -144,8 +141,11 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
   void scrollToBottomIfOnScreenKeyboard() {
     try {
       if (MediaQuery.of(context).viewInsets.bottom > 0) {
-        _scrollController.animateTo(_scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 500), curve: Curves.ease);
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.ease,
+        );
       }
     } catch (_) {}
   }
@@ -154,8 +154,8 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
     final double topPadding = MediaQuery.of(context).size.height * 0.050;
     final double dimensions =
         MediaQuery.of(context).orientation == Orientation.portrait
-            ? MediaQuery.of(context).size.width * 0.40
-            : MediaQuery.of(context).size.height * 0.40;
+        ? MediaQuery.of(context).size.width * 0.40
+        : MediaQuery.of(context).size.height * 0.40;
 
     return Padding(
       padding: EdgeInsets.only(top: topPadding),
@@ -163,9 +163,7 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
         child: SizedBox(
           width: dimensions,
           height: dimensions,
-          child: Image.asset(
-            SafeNotesConfig.appLogoPath,
-          ),
+          child: Image.asset(SafeNotesConfig.appLogoPath),
         ),
       ),
     );
@@ -196,30 +194,28 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
       SystemChannels.textInput.invokeMethod('TextInput.hide');
       passPhraseController.clear();
 
-      _startTimer(
-        () {
-          setState(
-            () {
-              _isLocked = false;
-              _isKeyboardFocused = true;
-              _formKey = GlobalKey<FormState>();
-            },
-          );
-        },
-      );
+      _startTimer(() {
+        setState(() {
+          _isLocked = false;
+          _isKeyboardFocused = true;
+          _formKey = GlobalKey<FormState>();
+        });
+      });
 
       return StreamBuilder(
         stream: _controller.stream,
         builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-          String? timeLeft =
-              snapshot.hasData ? snapshot.data : _lockoutTime.toString();
+          String? timeLeft = snapshot.hasData
+              ? snapshot.data
+              : _lockoutTime.toString();
           return Padding(
             padding: const EdgeInsets.only(bottom: 20),
             child: Align(
               alignment: Alignment.center,
               child: Text(
-                'Exceeded number of attempts, try after {timeLeft} seconds'
-                    .tr(namedArgs: {'timeLeft': timeLeft.toString()}),
+                'Exceeded number of attempts, try after {timeLeft} seconds'.tr(
+                  namedArgs: {'timeLeft': timeLeft.toString()},
+                ),
                 style: TextStyle(
                   color: NordColors.aurora.red,
                   fontSize: 13,
@@ -266,9 +262,8 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
       _noOfAllowedAttempts--;
       final wrongPhraseMsg =
           'Wrong passphrase {noOfAllowedAttempts} attempts left!'.tr(
-              namedArgs: {
-            'noOfAllowedAttempts': _noOfAllowedAttempts.toString()
-          });
+            namedArgs: {'noOfAllowedAttempts': _noOfAllowedAttempts.toString()},
+          );
 
       return _noOfAllowedAttempts == 0
           ? numberOfAttemptExceeded
@@ -315,10 +310,7 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 10),
-          child: Text(
-            'OR'.tr(),
-            style: const TextStyle(fontSize: 15),
-          ),
+          child: Text('OR'.tr(), style: const TextStyle(fontSize: 15)),
         ),
         Align(
           alignment: Alignment.centerRight,
@@ -331,25 +323,21 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
                     : NordColors.polarNight.darkest,
                 minimumSize: const Size(200, 50), //Size.fromHeight(50),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 elevation: 5.0,
               ),
-              onPressed: (PreferencesStorage.isBiometricAuthEnabled &&
+              onPressed:
+                  (PreferencesStorage.isBiometricAuthEnabled &&
                       !forcePassphraseInput &&
                       !_isLocked)
                   ? _authenticate
                   : null,
               child: Wrap(
                 children: <Widget>[
-                  const Icon(
-                    Icons.fingerprint,
-                    size: 30.0,
-                  ),
+                  const Icon(Icons.fingerprint, size: 30.0),
                   const SizedBox(width: 10),
-                  Text(
-                    'Biometric'.tr(),
-                    style: const TextStyle(fontSize: 20),
-                  ),
+                  Text('Biometric'.tr(), style: const TextStyle(fontSize: 20)),
                 ],
               ),
             ),
@@ -398,8 +386,8 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
   }
 
   Widget _buildForgotPassphrase() {
-    final String cantRecoverPassphraseMsg =
-        "Can't decrypt without phrase!".tr();
+    final String cantRecoverPassphraseMsg = "Can't decrypt without phrase!"
+        .tr();
     double fontSize = 10;
 
     return Container(
@@ -407,9 +395,7 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
       child: TextButton(
         child: Text(
           cantRecoverPassphraseMsg,
-          style: TextStyle(
-            fontSize: fontSize,
-          ),
+          style: TextStyle(fontSize: fontSize),
         ),
         onPressed: () {
           showGenericDialog(
@@ -472,26 +458,23 @@ void _startTimer(VoidCallback callback) {
 
   if (_timer != null) _timer?.cancel();
 
-  _timer = Timer.periodic(
-    const Duration(seconds: 1),
-    (timer) {
-      (_counter > 0) ? _counter-- : _timer?.cancel();
-      _controller.add(_counter.toString().padLeft(2, '0'));
-      if (_counter <= 0) {
-        _noOfAllowedAttempts = PreferencesStorage.noOfLogginAttemptAllowed;
-        callback();
-      }
-    },
-  );
+  _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    (_counter > 0) ? _counter-- : _timer?.cancel();
+    _controller.add(_counter.toString().padLeft(2, '0'));
+    if (_counter <= 0) {
+      _noOfAllowedAttempts = PreferencesStorage.noOfLogginAttemptAllowed;
+      callback();
+    }
+  });
 }
 
 bool isPassphraseRememberChallenge() {
   return PreferencesStorage.biometricAttemptAllTimeCount == 0
       ? false
       : PreferencesStorage.biometricAttemptAllTimeCount %
-              PreferencesStorage
-                  .noOfLoginsBeforeNextPassphraseRememberChallenge ==
-          0;
+                PreferencesStorage
+                    .noOfLoginsBeforeNextPassphraseRememberChallenge ==
+            0;
 }
 
 enum _BiometricState { unknown, supported, unsupported }

@@ -33,9 +33,7 @@ void showThemeBottomSheet(BuildContext context) {
 }
 
 class ThemeBottomSheet extends StatefulWidget {
-  const ThemeBottomSheet({
-    Key? key,
-  }) : super(key: key);
+  const ThemeBottomSheet({Key? key}) : super(key: key);
 
   @override
   ThemeBottomSheetState createState() => ThemeBottomSheetState();
@@ -66,14 +64,15 @@ class ThemeBottomSheetState extends State<ThemeBottomSheet> {
 
     bool darkModeSwitchValue =
         (PreferencesStorage.isSystemDarkLightSwitchEnabled)
-            ? isPlatformDark
-            : PreferencesStorage.isLocalDarkSwitchEnabled;
+        ? isPlatformDark
+        : PreferencesStorage.isLocalDarkSwitchEnabled;
 
     final symmetricPadding = MediaQuery.of(context).size.width * 0.04;
     final topHeadingPadding = MediaQuery.of(context).size.height * 0.03;
     const headTextStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: 20);
-    final innerTextStyle =
-        Theme.of(context).textTheme.titleMedium!.copyWith(fontSize: 16);
+    final innerTextStyle = Theme.of(
+      context,
+    ).textTheme.titleMedium!.copyWith(fontSize: 16);
 
     return Stack(
       alignment: AlignmentDirectional.topCenter,
@@ -96,9 +95,10 @@ class ThemeBottomSheetState extends State<ThemeBottomSheet> {
           children: [
             Padding(
               padding: EdgeInsets.only(
-                  left: symmetricPadding,
-                  right: symmetricPadding,
-                  top: symmetricPadding),
+                left: symmetricPadding,
+                right: symmetricPadding,
+                top: symmetricPadding,
+              ),
               child: Column(
                 children: [
                   Text(
@@ -107,19 +107,19 @@ class ThemeBottomSheetState extends State<ThemeBottomSheet> {
                     textAlign: TextAlign.center,
                   ),
                   CupertinoSwitchListTile(
-                    title: Text(
-                      darkModeText,
-                      style: innerTextStyle,
-                    ),
+                    title: Text(darkModeText, style: innerTextStyle),
                     value: darkModeSwitchValue,
                     onChanged: (bool value) async {
-                      final provider =
-                          Provider.of<ThemeProvider>(context, listen: false);
+                      final provider = Provider.of<ThemeProvider>(
+                        context,
+                        listen: false,
+                      );
                       provider.setIsDarkMode(value);
 
                       await PreferencesStorage.setLocalDarkSwitchEnabled(value);
                       await PreferencesStorage.setSystemDarkLightSwitchEnabled(
-                          false);
+                        false,
+                      );
 
                       setState(() {});
                     },
@@ -131,20 +131,22 @@ class ThemeBottomSheetState extends State<ThemeBottomSheet> {
                     ),
                     subtitle: Text(
                       systemDefaultSettingsSubtitleText,
-                      style: const TextStyle(
-                        fontSize: 11,
-                      ),
+                      style: const TextStyle(fontSize: 11),
                     ),
                     value: PreferencesStorage.isSystemDarkLightSwitchEnabled,
                     onChanged: (bool value) async {
-                      final provider =
-                          Provider.of<ThemeProvider>(context, listen: false);
+                      final provider = Provider.of<ThemeProvider>(
+                        context,
+                        listen: false,
+                      );
                       provider.setIsDarkMode(isPlatformDark);
 
                       await PreferencesStorage.setLocalDarkSwitchEnabled(
-                          isPlatformDark);
+                        isPlatformDark,
+                      );
                       await PreferencesStorage.setSystemDarkLightSwitchEnabled(
-                          value);
+                        value,
+                      );
                       setState(() {});
                     },
                   ),
@@ -153,9 +155,7 @@ class ThemeBottomSheetState extends State<ThemeBottomSheet> {
             ),
             _divider(),
             Padding(
-              padding: EdgeInsets.only(
-                top: topHeadingPadding / 4,
-              ),
+              padding: EdgeInsets.only(top: topHeadingPadding / 4),
               child: Text(
                 themeText,
                 style: headTextStyle,
@@ -171,10 +171,7 @@ class ThemeBottomSheetState extends State<ThemeBottomSheet> {
               child: Column(
                 children: [
                   CupertinoCheckListTile(
-                    title: Text(
-                      dimText,
-                      style: innerTextStyle,
-                    ),
+                    title: Text(dimText, style: innerTextStyle),
                     value: darkTheme == DarkThemeEnum.dim,
                     onChanged: !isThemeActive
                         ? null
@@ -191,10 +188,7 @@ class ThemeBottomSheetState extends State<ThemeBottomSheet> {
                           },
                   ),
                   CupertinoCheckListTile(
-                    title: Text(
-                      lightOutText,
-                      style: innerTextStyle,
-                    ),
+                    title: Text(lightOutText, style: innerTextStyle),
                     value: darkTheme == DarkThemeEnum.lightOut,
                     onChanged: !isThemeActive
                         ? null
@@ -209,22 +203,22 @@ class ThemeBottomSheetState extends State<ThemeBottomSheet> {
                               isDarkDim: false,
                             );
                           },
-                  )
+                  ),
                 ],
               ),
             ),
           ],
-        )
+        ),
       ],
     );
   }
 }
 
 Widget _divider() => Divider(
-      color: PreferencesStorage.isThemeDark
-          ? Colors.grey.shade600
-          : Colors.grey.shade500,
-    );
+  color: PreferencesStorage.isThemeDark
+      ? Colors.grey.shade600
+      : Colors.grey.shade500,
+);
 
 void setModalStateDarkTheme({
   required BuildContext context,

@@ -26,7 +26,6 @@ jobs:
         with:
           channel: 'stable'
           flutter-version-file: pubspec.yaml
-          architecture: x64
 
       - name: Get flutter dependencies
         run: flutter pub get

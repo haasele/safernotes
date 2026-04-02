@@ -73,10 +73,7 @@ class SetEncryptionPhrasePageState extends State<SetEncryptionPhrasePage> {
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
-          title: Text(
-            'Set Passphrase'.tr(),
-            style: appBarTitle,
-          ),
+          title: Text('Set Passphrase'.tr(), style: appBarTitle),
           centerTitle: true,
         ),
         body: CustomScrollView(
@@ -109,8 +106,8 @@ class SetEncryptionPhrasePageState extends State<SetEncryptionPhrasePage> {
     final double topPadding = MediaQuery.of(context).size.height * 0.070;
     final double dimensions =
         MediaQuery.of(context).orientation == Orientation.portrait
-            ? MediaQuery.of(context).size.width * 0.40
-            : MediaQuery.of(context).size.height * 0.40;
+        ? MediaQuery.of(context).size.width * 0.40
+        : MediaQuery.of(context).size.height * 0.40;
 
     return Padding(
       padding: EdgeInsets.only(top: topPadding),
@@ -153,8 +150,11 @@ class SetEncryptionPhrasePageState extends State<SetEncryptionPhrasePage> {
 
   void scrollToBottomIfOnScreenKeyboard() {
     if (MediaQuery.of(context).viewInsets.bottom > 0) {
-      _scrollController.animateTo(_scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 500), curve: Curves.ease);
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.ease,
+      );
     }
   }
 
@@ -255,8 +255,8 @@ class SetEncryptionPhrasePageState extends State<SetEncryptionPhrasePage> {
     return passphrase == null || passphrase.length < minPassphraseLength
         ? 'Must be at least 8 characters long!'.tr()
         : (estimateBruteforceStrength(passphrase) < minPassphraseStrength)
-            ? 'Passphrase is too weak!'.tr()
-            : null;
+        ? 'Passphrase is too weak!'.tr()
+        : null;
   }
 
   String? _confirmInputValidator(String? passphraseConfirm) {

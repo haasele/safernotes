@@ -34,12 +34,7 @@ class _AutoRotationSettingState extends State<AutoRotationSetting> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Auto Rotate'.tr(),
-          style: appBarTitle,
-        ),
-      ),
+      appBar: AppBar(title: Text('Auto Rotate'.tr(), style: appBarTitle)),
       body: _settings(),
     );
   }

@@ -70,7 +70,9 @@ class RouteGenerator {
           );
         }
         return _errorRoute(
-            route: routeName, argsType: 'StreamController<SessionState>');
+          route: routeName,
+          argsType: 'StreamController<SessionState>',
+        );
 
       case '/signup':
         if (args is SessionArguments) {
@@ -84,7 +86,9 @@ class RouteGenerator {
           );
         }
         return _errorRoute(
-            route: routeName, argsType: 'StreamController<SessionState>');
+          route: routeName,
+          argsType: 'StreamController<SessionState>',
+        );
 
       case '/authwall':
         if (args is SessionArguments) {
@@ -98,7 +102,9 @@ class RouteGenerator {
           );
         }
         return _errorRoute(
-            route: routeName, argsType: 'StreamController<SessionState>');
+          route: routeName,
+          argsType: 'StreamController<SessionState>',
+        );
 
       case '/home':
         if (args is StreamController<SessionState>) {
@@ -109,7 +115,9 @@ class RouteGenerator {
           );
         }
         return _errorRoute(
-            route: routeName, argsType: 'StreamController<SessionState>');
+          route: routeName,
+          argsType: 'StreamController<SessionState>',
+        );
 
       case '/viewnote':
         if (args is NoteDetailPageArguments) {
@@ -134,7 +142,9 @@ class RouteGenerator {
           );
         }
         return _errorRoute(
-            route: routeName, argsType: 'StreamController<SessionState>');
+          route: routeName,
+          argsType: 'StreamController<SessionState>',
+        );
 
       case '/editnote':
         if (args is AddEditNoteArguments) {
@@ -172,7 +182,9 @@ class RouteGenerator {
           );
         }
         return _errorRoute(
-            route: routeName, argsType: 'StreamController<SessionState>');
+          route: routeName,
+          argsType: 'StreamController<SessionState>',
+        );
 
       case '/chooseColorSettings':
         return PageTransition(
@@ -221,27 +233,36 @@ class RouteGenerator {
     }
   }
 
-  static Route<dynamic> _errorRoute(
-      {required String? route, String? argsType}) {
-    return MaterialPageRoute(builder: (_) {
-      return Scaffold(
-        appBar: AppBar(title: Text('Route Error'.tr())),
-        body: Padding(
-          padding: const EdgeInsets.only(left: 5, right: 5),
-          child: Center(
-            child: argsType == null
-                ? Text('No route: {route}'
-                    .tr(namedArgs: {'route': route.toString()}))
-                : Text(
-                    '{argsType}, Needed for route: {route}'.tr(namedArgs: {
-                      'argsType': argsType,
-                      'route': route.toString()
-                    }),
-                  ),
+  static Route<dynamic> _errorRoute({
+    required String? route,
+    String? argsType,
+  }) {
+    return MaterialPageRoute(
+      builder: (_) {
+        return Scaffold(
+          appBar: AppBar(title: Text('Route Error'.tr())),
+          body: Padding(
+            padding: const EdgeInsets.only(left: 5, right: 5),
+            child: Center(
+              child: argsType == null
+                  ? Text(
+                      'No route: {route}'.tr(
+                        namedArgs: {'route': route.toString()},
+                      ),
+                    )
+                  : Text(
+                      '{argsType}, Needed for route: {route}'.tr(
+                        namedArgs: {
+                          'argsType': argsType,
+                          'route': route.toString(),
+                        },
+                      ),
+                    ),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }
 
@@ -249,18 +270,12 @@ class AddEditNoteArguments {
   final StreamController<SessionState> sessionStream;
   final SafeNote? note;
 
-  AddEditNoteArguments({
-    required this.sessionStream,
-    this.note,
-  });
+  AddEditNoteArguments({required this.sessionStream, this.note});
 }
 
 class NoteDetailPageArguments {
   final StreamController<SessionState> sessionStream;
   final SafeNote note;
 
-  NoteDetailPageArguments({
-    required this.sessionStream,
-    required this.note,
-  });
+  NoteDetailPageArguments({required this.sessionStream, required this.note});
 }

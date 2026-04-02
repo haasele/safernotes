@@ -35,12 +35,7 @@ class _BiometricSettingState extends State<BiometricSetting> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Biometric'.tr(),
-          style: appBarTitle,
-        ),
-      ),
+      appBar: AppBar(title: Text('Biometric'.tr(), style: appBarTitle)),
       body: _settings(),
     );
   }

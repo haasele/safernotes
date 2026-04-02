@@ -62,7 +62,7 @@ class PreferencesStorage {
   static String get passPhraseHash =>
       _preferences?.getString(_keyPassPhraseHash) ?? '';
 
-// appVersionCode controls the one time code execution on version change
+  // appVersionCode controls the one time code execution on version change
   static int get appVersionCode =>
       _preferences?.getInt(_keyAppVersionCode) ?? 1;
 
@@ -79,7 +79,7 @@ class PreferencesStorage {
     bool? isDark = _preferences?.getBool(_keyIsThemeDark);
     bool isSystemDark =
         WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-            Brightness.dark;
+        Brightness.dark;
 
     if (isSystemDarkLightSwitchEnabled) {
       return isSystemDark;
@@ -96,8 +96,10 @@ class PreferencesStorage {
       _preferences?.getInt(_keyBackupRedundancyCounter) ?? 0;
 
   static Future<void> incrementBackupRedundancyCounter() async =>
-      await _preferences?.setInt(_keyBackupRedundancyCounter,
-          PreferencesStorage.backupRedundancyCounter + 1);
+      await _preferences?.setInt(
+        _keyBackupRedundancyCounter,
+        PreferencesStorage.backupRedundancyCounter + 1,
+      );
 
   static bool get isFlagSecure =>
       _preferences?.getBool(_keyIsFlagSecure) ?? true;
@@ -172,7 +174,7 @@ class PreferencesStorage {
   static Future<void> setInactivityTimeoutIndex({required int index}) async =>
       await _preferences?.setInt(_keyInactivityTimeout, index);
 
-//default: Same as inactivityTimeout
+  //default: Same as inactivityTimeout
   static int get focusTimeout => PreferencesStorage.inactivityTimeout;
   // static int get focusTimeout => _preferences?.getInt(_keyFocusTimeout) ?? 60;
 
@@ -193,8 +195,10 @@ class PreferencesStorage {
       _preferences?.getInt(_keyBiometricAttemptAllTimeCount) ?? 0;
 
   static Future<void> incrementBiometricAttemptAllTimeCount() async =>
-      await _preferences?.setInt(_keyBiometricAttemptAllTimeCount,
-          PreferencesStorage.biometricAttemptAllTimeCount + 1);
+      await _preferences?.setInt(
+        _keyBiometricAttemptAllTimeCount,
+        PreferencesStorage.biometricAttemptAllTimeCount + 1,
+      );
 
   static bool get isCompactPreview =>
       _preferences?.getBool(_keyIsCompactPreview) ?? false;
@@ -368,8 +372,8 @@ class SafeNotesConfig {
   }
 
   static String get backupFileName {
-    String redundancyCounter =
-        PreferencesStorage.backupRedundancyCounter.toString();
+    String redundancyCounter = PreferencesStorage.backupRedundancyCounter
+        .toString();
     if (redundancyCounter == '0') {
       return '$_backupFileNamePrefix$_backupExtension';
     }

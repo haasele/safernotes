@@ -30,9 +30,7 @@ class Style {
   }
 }
 
-TextStyle dialogBodyTextStyle = const TextStyle(
-  fontSize: 14,
-);
+TextStyle dialogBodyTextStyle = const TextStyle(fontSize: 14);
 
 TextStyle dialogHeadTextStyle = const TextStyle(
   fontFamily: 'MerriweatherBlack',

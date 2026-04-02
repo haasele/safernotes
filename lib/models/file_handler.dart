@@ -95,8 +95,10 @@ class FileHandler {
       bool importConfirmed = false;
       // TODO: refactor without using BuildContexts across async gap
       if (context.mounted) {
-        importConfirmed =
-            await confirmImportDialog(context, parsedImportData.totalNotes);
+        importConfirmed = await confirmImportDialog(
+          context,
+          parsedImportData.totalNotes,
+        );
       }
       if (importConfirmed) {
         await insertNotes(parsedImportData.getAllNotes());

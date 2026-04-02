@@ -32,9 +32,11 @@ class NoteDetailPage extends StatefulWidget {
   final int noteId;
   final StreamController<SessionState> sessionStateStream;
 
-  const NoteDetailPage(
-      {Key? key, required this.noteId, required this.sessionStateStream})
-      : super(key: key);
+  const NoteDetailPage({
+    Key? key,
+    required this.noteId,
+    required this.sessionStateStream,
+  }) : super(key: key);
 
   @override
   NoteDetailPageState createState() => NoteDetailPageState();
@@ -59,10 +61,7 @@ class NoteDetailPageState extends State<NoteDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _appBar(context),
-      body: _body(context),
-    );
+    return Scaffold(appBar: _appBar(context), body: _body(context));
   }
 
   PreferredSizeWidget _appBar(BuildContext context) {
@@ -99,7 +98,7 @@ class NoteDetailPageState extends State<NoteDetailPage> {
                   note.description,
                   textDirection: getTextDirecton(note.description),
                   style: const TextStyle(fontSize: 18),
-                )
+                ),
               ],
             ),
           );

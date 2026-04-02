@@ -30,11 +30,8 @@ class NoteCardWidget extends StatelessWidget {
   final SafeNote note;
   final int index;
 
-  const NoteCardWidget({
-    Key? key,
-    required this.note,
-    required this.index,
-  }) : super(key: key);
+  const NoteCardWidget({Key? key, required this.note, required this.index})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +42,10 @@ class NoteCardWidget extends StatelessWidget {
     DateTime now = DateTime.now();
     DateTime todayDate = DateTime(now.year, now.month, now.day);
     DateTime noteDate = DateTime(
-        note.createdTime.year, note.createdTime.month, note.createdTime.day);
+      note.createdTime.year,
+      note.createdTime.month,
+      note.createdTime.day,
+    );
     String time = (todayDate == noteDate)
         ? humanTime(
             time: note.createdTime,
@@ -56,9 +56,7 @@ class NoteCardWidget extends StatelessWidget {
     return Card(
       shadowColor: PreferencesStorage.isThemeDark ? Colors.white : Colors.black,
       color: color,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Container(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -94,11 +92,7 @@ class NoteCardWidget extends StatelessWidget {
             AutoSizeText(
               sanitize(note.description),
               textDirection: getTextDirecton(note.description),
-              style: TextStyle(
-                color: fontColor,
-                fontSize: 16,
-                height: 1.2,
-              ),
+              style: TextStyle(color: fontColor, fontSize: 16, height: 1.2),
               minFontSize: 16,
               maxLines: getMaxLine(index), //3,
               overflow: TextOverflow.clip,

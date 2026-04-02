@@ -26,7 +26,7 @@ class NoteEditorState {
   static bool wasNoteSaveAttempted = false;
   static setSaveAttempted(bool flag) => wasNoteSaveAttempted = flag;
 
-// to be called everytime content of note in editor is changes
+  // to be called everytime content of note in editor is changes
   static setState(SafeNote? note, String titleNew, String descriptionNew) {
     original = note;
     title = titleNew;
@@ -40,7 +40,7 @@ class NoteEditorState {
     wasNoteSaveAttempted = false;
   }
 
-// to be called during inactivity timeOut
+  // to be called during inactivity timeOut
   Future<void> handleUngracefulNoteExit() async {
     // if note content was changed and note editor was closed(due to inactivity)
     // without user opting for saving or discarding

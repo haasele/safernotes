@@ -38,7 +38,7 @@ class SettingsScreen extends StatefulWidget {
   final StreamController<SessionState> sessionStateStream;
 
   const SettingsScreen({Key? key, required this.sessionStateStream})
-      : super(key: key);
+    : super(key: key);
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -50,12 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Settings'.tr(),
-          style: appBarTitle,
-        ),
-      ),
+      appBar: AppBar(title: Text('Settings'.tr(), style: appBarTitle)),
       body: _settings(),
     );
   }
@@ -142,15 +137,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (context.locale.toString() != 'en_US')
                     const Padding(
                       padding: EdgeInsets.only(top: 5),
-                      child: Text(
-                        'Language',
-                        style: TextStyle(fontSize: 12),
-                      ),
+                      child: Text('Language', style: TextStyle(fontSize: 12)),
                     ),
                 ],
               ),
               value: Text(
-                  SafeNotesConfig.mapLocaleName[context.locale.toString()]!),
+                SafeNotesConfig.mapLocaleName[context.locale.toString()]!,
+              ),
               onPressed: (context) async {
                 await Navigator.pushNamed(context, '/chooseLanguageSettings');
                 setState(() {});
@@ -198,7 +191,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               initialValue: PreferencesStorage.keyboardIncognito,
               onToggle: (bool value) {
                 PreferencesStorage.setKeyboardIncognito(
-                    !PreferencesStorage.keyboardIncognito);
+                  !PreferencesStorage.keyboardIncognito,
+                );
                 setState(() {});
               },
             ),

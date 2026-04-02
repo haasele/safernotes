@@ -37,7 +37,8 @@ class Session {
 
   static setOrChangePassphrase(String passphrase) {
     PreferencesStorage.setPassPhraseHash(
-        sha256.convert(utf8.encode(passphrase)).toString());
+      sha256.convert(utf8.encode(passphrase)).toString(),
+    );
     PhraseHandler.initPass(passphrase);
     if (PreferencesStorage.isBiometricAuthEnabled) BiometricAuth.setAuthKey();
   }
@@ -47,8 +48,5 @@ class SessionArguments {
   final StreamController<SessionState> sessionStream;
   final bool? isKeyboardFocused;
 
-  SessionArguments({
-    required this.sessionStream,
-    this.isKeyboardFocused,
-  });
+  SessionArguments({required this.sessionStream, this.isKeyboardFocused});
 }

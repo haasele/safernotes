@@ -21,8 +21,9 @@ import 'package:safenotes_nord_theme/safenotes_nord_theme.dart';
 import 'package:safenotes/data/preference_and_config.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  ThemeMode themeMode =
-      PreferencesStorage.isThemeDark ? ThemeMode.dark : ThemeMode.light;
+  ThemeMode themeMode = PreferencesStorage.isThemeDark
+      ? ThemeMode.dark
+      : ThemeMode.light;
 
   bool get isDarkMode => themeMode == ThemeMode.dark;
 
@@ -43,8 +44,9 @@ class AppThemes {
   // Material You seed colors based on Nord theme palette
   // Using Nord's polar night blue (#2E3440) and frost blue (#88C0D0) as seed colors
   static const Color _lightSeedColor = Color(0xFF88C0D0); // Nord frost blue
-  static const Color _darkSeedColor =
-      Color(0xFF5E81AC); // Nord polar night blue variant
+  static const Color _darkSeedColor = Color(
+    0xFF5E81AC,
+  ); // Nord polar night blue variant
 
   //static final ThemeData darkTheme = ThemeData.dark();
   static ThemeData get darkTheme =>
@@ -52,26 +54,21 @@ class AppThemes {
 
   static final ThemeData lightOutTheme = ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: _darkSeedColor,
-      brightness: Brightness.dark,
-    ).copyWith(
-      surface: Colors.black,
-      onSurface: Colors.white,
-      surfaceContainerHighest: Colors.grey.shade900,
-      surfaceContainer: Colors.grey.shade800,
-      surfaceContainerLow: Colors.grey.shade700,
-    ),
-    textTheme: ThemeData.dark().textTheme.apply(
-          fontFamily: 'NotoSerif',
+    colorScheme:
+        ColorScheme.fromSeed(
+          seedColor: _darkSeedColor,
+          brightness: Brightness.dark,
+        ).copyWith(
+          surface: Colors.black,
+          onSurface: Colors.white,
+          surfaceContainerHighest: Colors.grey.shade900,
+          surfaceContainer: Colors.grey.shade800,
+          surfaceContainerLow: Colors.grey.shade700,
         ),
-    primaryTextTheme: ThemeData.dark().textTheme.apply(
-          fontFamily: 'NotoSerif',
-        ),
-    bottomAppBarTheme: BottomAppBarThemeData(
-      color: Colors.grey.shade900,
-    ),
-    dialogBackgroundColor: Colors.grey.shade900,
+    textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'NotoSerif'),
+    primaryTextTheme: ThemeData.dark().textTheme.apply(fontFamily: 'NotoSerif'),
+    bottomAppBarTheme: BottomAppBarThemeData(color: Colors.grey.shade900),
+    dialogTheme: DialogThemeData(backgroundColor: Colors.grey.shade900),
     scaffoldBackgroundColor: Colors.black,
     canvasColor: Colors.black,
     appBarTheme: AppBarTheme(
@@ -82,9 +79,7 @@ class AppThemes {
       backgroundColor: Colors.grey.shade900,
       surfaceTintColor: Colors.transparent,
     ),
-    drawerTheme: DrawerThemeData(
-      backgroundColor: Colors.grey.shade900,
-    ),
+    drawerTheme: DrawerThemeData(backgroundColor: Colors.grey.shade900),
   );
 
   static final ThemeData dimTheme = ThemeData(
@@ -93,12 +88,8 @@ class AppThemes {
       seedColor: _darkSeedColor,
       brightness: Brightness.dark,
     ),
-    textTheme: ThemeData.dark().textTheme.apply(
-          fontFamily: 'NotoSerif',
-        ),
-    primaryTextTheme: ThemeData.dark().textTheme.apply(
-          fontFamily: 'NotoSerif',
-        ),
+    textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'NotoSerif'),
+    primaryTextTheme: ThemeData.dark().textTheme.apply(fontFamily: 'NotoSerif'),
   );
 
   static Color get darkSettingsScaffold => PreferencesStorage.isDimTheme
@@ -115,12 +106,10 @@ class AppThemes {
       seedColor: _lightSeedColor,
       brightness: Brightness.light,
     ),
-    textTheme: ThemeData.light().textTheme.apply(
-          fontFamily: 'NotoSerif',
-        ),
+    textTheme: ThemeData.light().textTheme.apply(fontFamily: 'NotoSerif'),
     primaryTextTheme: ThemeData.light().textTheme.apply(
-          fontFamily: 'NotoSerif',
-        ),
+      fontFamily: 'NotoSerif',
+    ),
     unselectedWidgetColor: NordColors.frost.darker,
   );
 }

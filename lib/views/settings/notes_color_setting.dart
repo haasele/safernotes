@@ -40,12 +40,7 @@ class ColorPalletState extends State<ColorPallet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Notes Color'.tr(),
-          style: appBarTitle,
-        ),
-      ),
+      appBar: AppBar(title: Text('Notes Color'.tr(), style: appBarTitle)),
       body: _settings(),
     );
   }
@@ -66,8 +61,10 @@ class ColorPalletState extends State<ColorPallet> {
               initialValue: PreferencesStorage.isColorful,
               title: Text('Colorful Notes'.tr()),
               onToggle: (value) {
-                final provider =
-                    Provider.of<NotesColor>(context, listen: false);
+                final provider = Provider.of<NotesColor>(
+                  context,
+                  listen: false,
+                );
                 provider.toggleColor();
                 setState(() {});
               },
@@ -77,10 +74,7 @@ class ColorPalletState extends State<ColorPallet> {
         ),
         CustomSettingsSection(
           child: Column(
-            children: [
-              _colourPreview(),
-              _buildColourComboList(context),
-            ],
+            children: [_colourPreview(), _buildColourComboList(context)],
           ),
         ),
       ],
@@ -114,10 +108,7 @@ class ColorPalletState extends State<ColorPallet> {
     colorPallets.add(
       Expanded(
         child: Container(
-          decoration: BoxDecoration(
-            color: colors[0],
-            borderRadius: first,
-          ),
+          decoration: BoxDecoration(color: colors[0], borderRadius: first),
           height: boxHeight,
         ),
       ),
@@ -156,7 +147,10 @@ class ColorPalletState extends State<ColorPallet> {
 
     return Padding(
       padding: EdgeInsets.only(
-          left: widthRatio * 5, right: widthRatio * 5, bottom: heightRatio * 1),
+        left: widthRatio * 5,
+        right: widthRatio * 5,
+        bottom: heightRatio * 1,
+      ),
       child: Container(
         decoration: PreferencesStorage.isThemeDark
             ? BoxDecoration(
@@ -227,10 +221,7 @@ class ColorPalletState extends State<ColorPallet> {
       child: CupertinoFormRow(
         prefix: Text(prefix.tr()),
         helper: helper != null
-            ? Text(
-                helper.tr(),
-                style: Theme.of(context).textTheme.bodySmall,
-              )
+            ? Text(helper.tr(), style: Theme.of(context).textTheme.bodySmall)
             : null,
         child: selected
             ? const Padding(

@@ -49,10 +49,7 @@ class CupertinoSwitchListTile extends StatelessWidget {
         leading: secondary,
         title: title,
         subtitle: subtitle,
-        trailing: CupertinoSwitch(
-          value: value,
-          onChanged: onChanged,
-        ),
+        trailing: CupertinoSwitch(value: value, onChanged: onChanged),
         isThreeLine: isThreeLine,
         dense: dense,
         contentPadding: contentPadding,
@@ -89,10 +86,7 @@ class CupertinoCheckListTile extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           title,
-          CupertinoCheckboxIcon(
-            value: value,
-            isEnabled: isEnabled,
-          ),
+          CupertinoCheckboxIcon(value: value, isEnabled: isEnabled),
         ],
       ),
     );
@@ -111,17 +105,14 @@ class CupertinoCheckboxIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fillColor =
-        isEnabled ? CupertinoColors.activeBlue : CupertinoColors.inactiveGray;
+    final fillColor = isEnabled
+        ? CupertinoColors.activeBlue
+        : CupertinoColors.inactiveGray;
     const double iconCircleSize = 30;
     const double iconCheckSize = 18;
 
     return value
-        ? _buildCheckedIcon(
-            fillColor,
-            iconCircleSize,
-            iconCheckSize,
-          )
+        ? _buildCheckedIcon(fillColor, iconCircleSize, iconCheckSize)
         : _buildUncheckedIcon(iconCircleSize);
   }
 

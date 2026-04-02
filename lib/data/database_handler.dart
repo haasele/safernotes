@@ -94,8 +94,11 @@ class NotesDatabase {
   Future<String> exportAllEncrypted() async {
     final db = await instance.database;
     const orderBy = '${NoteFields.time} ASC';
-    final result = await db.query(tableNotes,
-        columns: ['title', 'description', 'time'], orderBy: orderBy);
+    final result = await db.query(
+      tableNotes,
+      columns: ['title', 'description', 'time'],
+      orderBy: orderBy,
+    );
 
     return jsonEncode(result).toString();
   }

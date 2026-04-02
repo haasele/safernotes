@@ -35,12 +35,7 @@ class _LanguageSettingState extends State<LanguageSetting> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Language'.tr(),
-          style: appBarTitle,
-        ),
-      ),
+      appBar: AppBar(title: Text('Language'.tr(), style: appBarTitle)),
       body: _settings(),
     );
   }
@@ -55,9 +50,7 @@ class _LanguageSettingState extends State<LanguageSetting> {
       ),
       sections: [
         CustomSettingsSection(
-          child: CustomSettingsTile(
-            child: _buildLanguageList(context),
-          ),
+          child: CustomSettingsTile(child: _buildLanguageList(context)),
         ),
       ],
     );
@@ -68,7 +61,8 @@ class _LanguageSettingState extends State<LanguageSetting> {
 
     if (SafeNotesConfig.mapLocaleName.containsKey(context.locale.toString())) {
       selectedIndex = indexofLanguage(
-          SafeNotesConfig.mapLocaleName[context.locale.toString()]!);
+        SafeNotesConfig.mapLocaleName[context.locale.toString()]!,
+      );
     }
 
     var items = SafeNotesConfig.languageItems;
@@ -92,7 +86,8 @@ class _LanguageSettingState extends State<LanguageSetting> {
                 onTap: () => setState(() {
                   selectedIndex = index;
                   context.setLocale(
-                      SafeNotesConfig.allLocale[items[index].prefix]!);
+                    SafeNotesConfig.allLocale[items[index].prefix]!,
+                  );
                   setState(() {});
                 }),
                 child: AbsorbPointer(
@@ -120,10 +115,7 @@ class _LanguageSettingState extends State<LanguageSetting> {
       child: CupertinoFormRow(
         prefix: Text(prefix),
         helper: helper != null
-            ? Text(
-                helper,
-                style: Theme.of(context).textTheme.bodySmall,
-              )
+            ? Text(helper, style: Theme.of(context).textTheme.bodySmall)
             : null,
         child: selected
             ? const Padding(

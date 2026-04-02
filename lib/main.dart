@@ -36,9 +36,9 @@ import 'package:safenotes/views/settings/backup_setting.dart';
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  WidgetsBinding.instance.addObserver(AppLifecycleEventHandler(
-    inactiveCallBack: ScheduledTask.backup,
-  ));
+  WidgetsBinding.instance.addObserver(
+    AppLifecycleEventHandler(inactiveCallBack: ScheduledTask.backup),
+  );
 
   await PreferencesStorage.init();
 
@@ -48,7 +48,7 @@ Future main() async {
     if (PreferencesStorage.isAutoRotate) ...[
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
-    ]
+    ],
   ]);
 
   onAppUpdate();
@@ -100,21 +100,17 @@ class SafeNotesApp extends StatelessWidget {
 
     if (timeoutEvent == SessionTimeoutState.userInactivityTimeout &&
         PreferencesStorage.isInactivityTimeoutOn) {
-      await onTimeOutDo(
-        context: context,
-        showPreLogoffAlert: true,
-      );
+      await onTimeOutDo(context: context, showPreLogoffAlert: true);
       // Don't logout if user is active
     } else if (timeoutEvent == SessionTimeoutState.appFocusTimeout) {
-      await onTimeOutDo(
-        context: context,
-        showPreLogoffAlert: false,
-      );
+      await onTimeOutDo(context: context, showPreLogoffAlert: false);
     }
   }
 
-  Future<void> onTimeOutDo(
-      {required BuildContext context, required bool showPreLogoffAlert}) async {
+  Future<void> onTimeOutDo({
+    required BuildContext context,
+    required bool showPreLogoffAlert,
+  }) async {
     // execute only if user is already logged
     // no need to logout and redirect to authwall if user is not loggedIN
     if (PhraseHandler.getPass.isNotEmpty) {
@@ -128,10 +124,7 @@ class SafeNotesApp extends StatelessWidget {
 
         // TODO: refactor without using BuildContexts across async gap
         if (context.mounted) {
-          logout(
-            context: context,
-            showLogoutMsg: true,
-          );
+          logout(context: context, showLogoutMsg: true);
         }
       }
       if (isUserActive == false) {
@@ -139,10 +132,7 @@ class SafeNotesApp extends StatelessWidget {
 
         // TODO: refactor without using BuildContexts across async gap
         if (context.mounted) {
-          logout(
-            context: context,
-            showLogoutMsg: false,
-          );
+          logout(context: context, showLogoutMsg: false);
         }
       }
       //else user pressed cancel and is active

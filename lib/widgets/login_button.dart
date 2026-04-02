@@ -24,11 +24,8 @@ class ButtonWidget extends StatelessWidget {
   final String text;
   final VoidCallback? onClicked;
 
-  const ButtonWidget({
-    Key? key,
-    required this.text,
-    required this.onClicked,
-  }) : super(key: key);
+  const ButtonWidget({Key? key, required this.text, required this.onClicked})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -50,10 +47,7 @@ class ButtonWidget extends StatelessWidget {
           ),
           onPressed: onClicked,
           child: FittedBox(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 20),
-            ),
+            child: Text(text, style: const TextStyle(fontSize: 20)),
           ),
         ),
       ),

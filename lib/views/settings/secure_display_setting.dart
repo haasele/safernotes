@@ -34,12 +34,7 @@ class _SecureDisplaySettingState extends State<SecureDisplaySetting> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Secure Display'.tr(),
-          style: appBarTitle,
-        ),
-      ),
+      appBar: AppBar(title: Text('Secure Display'.tr(), style: appBarTitle)),
       body: _settings(),
     );
   }
@@ -64,8 +59,9 @@ class _SecureDisplaySettingState extends State<SecureDisplaySetting> {
                 setState(() {});
               },
               description: Text(
-                  'When turned on, the content on the screen is treated as secure, blocking background snapshots and preventing it from appearing in screenshots or from being viewed on non-secure displays.'
-                      .tr()),
+                'When turned on, the content on the screen is treated as secure, blocking background snapshots and preventing it from appearing in screenshots or from being viewed on non-secure displays.'
+                    .tr(),
+              ),
             ),
           ],
         ),

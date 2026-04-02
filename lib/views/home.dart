@@ -43,10 +43,8 @@ import 'package:safenotes/widgets/search_widget.dart';
 class HomePage extends StatefulWidget {
   final StreamController<SessionState> sessionStateStream;
 
-  const HomePage({
-    Key? key,
-    required this.sessionStateStream,
-  }) : super(key: key);
+  const HomePage({Key? key, required this.sessionStateStream})
+    : super(key: key);
 
   @override
   HomePageState createState() => HomePageState();
@@ -101,10 +99,7 @@ class HomePageState extends State<HomePage> {
       child: Scaffold(
         drawer: _buildDrawer(context),
         appBar: AppBar(
-          title: Text(
-            'Safe Notes'.tr(),
-            style: appBarTitle,
-          ),
+          title: Text('Safe Notes'.tr(), style: appBarTitle),
           actions: isLoading
               ? null
               : [
@@ -113,12 +108,7 @@ class HomePageState extends State<HomePage> {
                   _shortNotes(),
                 ],
         ),
-        body: Column(
-          children: [
-            _buildSearch(),
-            _handleAndBuildNotes(),
-          ],
-        ),
+        body: Column(children: [_buildSearch(), _handleAndBuildNotes()]),
         floatingActionButton: _addANewNoteButton(context),
       ),
     );
@@ -175,8 +165,8 @@ class HomePageState extends State<HomePage> {
     return Expanded(
       child: !isLoading
           ? notes.isEmpty
-              ? Text(noNotes, style: const TextStyle(fontSize: fontSize))
-              : (isGridView ? _buildNotes() : _buildNotesTile())
+                ? Text(noNotes, style: const TextStyle(fontSize: fontSize))
+                : (isGridView ? _buildNotes() : _buildNotesTile())
           : const Center(child: CircularProgressIndicator()),
     );
   }
@@ -246,10 +236,7 @@ class HomePageState extends State<HomePage> {
       },
       onBiometricsCallback: () async {
         var navigator = Navigator.of(context);
-        await Navigator.pushNamed(
-          context,
-          '/biometricSetting',
-        );
+        await Navigator.pushNamed(context, '/biometricSetting');
         navigator.pop();
       },
     );
@@ -279,10 +266,7 @@ class HomePageState extends State<HomePage> {
         );
       }),
       separatorBuilder: (BuildContext context, int index) {
-        return Container(
-          height: 7,
-          color: Colors.transparent,
-        );
+        return Container(height: 7, color: Colors.transparent);
       },
     );
   }
@@ -326,12 +310,10 @@ class HomePageState extends State<HomePage> {
           descriptionLower.contains(queryLower);
     }).toList();
 
-    setState(
-      () {
-        this.query = query;
-        this.notes = notes;
-      },
-    );
+    setState(() {
+      this.query = query;
+      this.notes = notes;
+    });
   }
 
   void dismissKeyboard([var _]) {
