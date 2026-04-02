@@ -17,7 +17,6 @@ import 'package:flutter/material.dart';
 TextStyle dialogBodyTextStyle = const TextStyle(fontSize: 14);
 
 TextStyle dialogHeadTextStyle = const TextStyle(
-  fontFamily: 'MerriweatherBlack',
   fontWeight: FontWeight.bold,
   letterSpacing: 0,
   fontSize: 20,

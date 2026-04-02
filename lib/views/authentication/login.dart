@@ -123,7 +123,7 @@ class EncryptionPhraseLoginPageState extends State<EncryptionPhraseLoginPage>
                     const Spacer(),
                     Padding(
                       padding: const EdgeInsets.only(top: 5),
-                      child: footer(),
+                      child: footer(context),
                     ),
                   ],
                 ),

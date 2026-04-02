@@ -209,7 +209,6 @@ class HomeDrawerState extends State<HomeDrawer> {
           minFontSize: 8,
           maxLines: 1,
           style: TextStyle(
-            fontFamily: 'MerriweatherBlack',
             fontWeight: FontWeight.bold,
             letterSpacing: -0.4,
             fontSize: 18,
@@ -265,7 +264,6 @@ class HomeDrawerState extends State<HomeDrawer> {
                         maxLines: 1,
                         minFontSize: 8,
                         style: const TextStyle(
-                          fontFamily: 'MerriweatherBlack',
                           fontWeight: FontWeight.bold,
                           fontSize: appNameFontSize,
                         ),

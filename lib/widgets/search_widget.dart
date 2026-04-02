@@ -14,10 +14,6 @@
 // Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
-import 'package:safenotes/data/preference_and_config.dart';
-import 'package:safenotes/utils/text_direction_util.dart';
-
 class SearchWidget extends StatefulWidget {
   final String text;
   final ValueChanged<String> onChanged;
@@ -39,63 +35,27 @@ class SearchWidgetState extends State<SearchWidget> {
 
   @override
   Widget build(BuildContext context) {
-    const styleActive = TextStyle(color: Colors.black);
-    const styleHint = TextStyle(color: Colors.black54);
-    final style = widget.text.isEmpty ? styleHint : styleActive;
-    const searchBoxRadius = 7.0;
-    final bool enableIMEPLFlag = !PreferencesStorage.keyboardIncognito;
-
-    return Container(
-      height: 42,
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(searchBoxRadius),
-        color: Colors.white,
-        border: Border.all(color: Colors.black26),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: TextField(
-        enableIMEPersonalizedLearning: enableIMEPLFlag,
-        textDirection: getTextDirecton(widget.text),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: SearchBar(
         controller: controller,
-        enableInteractiveSelection: true,
-        autofocus: false,
-        contextMenuBuilder: (context, editableTextState) {
-          final List<ContextMenuButtonItem> buttonItems =
-              editableTextState.contextMenuButtonItems;
-
-          final itemsToRemove = [
-            ContextMenuButtonType.share,
-            ContextMenuButtonType.searchWeb,
-            ContextMenuButtonType.lookUp,
-          ];
-
-          buttonItems.removeWhere((ContextMenuButtonItem buttonItem) {
-            return itemsToRemove.contains(buttonItem.type);
-          });
-
-          return AdaptiveTextSelectionToolbar.buttonItems(
-            anchors: editableTextState.contextMenuAnchors,
-            buttonItems: buttonItems,
-          );
-        },
-        decoration: InputDecoration(
-          icon: Icon(Icons.search, color: style.color),
-          suffixIcon: widget.text.isNotEmpty
-              ? GestureDetector(
-                  child: Icon(Icons.close, color: style.color),
-                  onTap: () {
-                    controller.clear();
-                    widget.onChanged('');
-                    //FocusScope.of(context).requestFocus(FocusNode());
-                  },
-                )
-              : null,
-          hintText: widget.hintText,
-          hintStyle: style,
-          border: InputBorder.none,
+        hintText: widget.hintText,
+        textInputAction: TextInputAction.search,
+        keyboardType: TextInputType.text,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 8),
+          child: Icon(Icons.search),
         ),
-        style: style,
+        trailing: [
+          if (widget.text.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () {
+                controller.clear();
+                widget.onChanged('');
+              },
+            ),
+        ],
         onChanged: widget.onChanged,
       ),
     );

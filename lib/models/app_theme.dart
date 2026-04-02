@@ -52,7 +52,6 @@ class ThemeProvider extends ChangeNotifier {
 
 class AppThemes {
   static const Color _seedColor = Color(0xFF88C0D0);
-  static const String _fontFamily = 'NotoSerif';
 
   static final ThemeData materialYouLight = ThemeData(
     useMaterial3: true,
@@ -60,7 +59,6 @@ class AppThemes {
       seedColor: _seedColor,
       brightness: Brightness.light,
     ),
-    fontFamily: _fontFamily,
   );
 
   static final ThemeData materialYouDark = ThemeData(
@@ -69,7 +67,6 @@ class AppThemes {
       seedColor: _seedColor,
       brightness: Brightness.dark,
     ),
-    fontFamily: _fontFamily,
   );
 
   static final ThemeData pitchBlack = () {
@@ -83,33 +80,32 @@ class AppThemes {
         surface: Colors.black,
         onSurface: Colors.white,
         surfaceContainerLowest: Colors.black,
-        surfaceContainerLow: const Color(0xFF121212),
-        surfaceContainer: const Color(0xFF1E1E1E),
-        surfaceContainerHigh: const Color(0xFF252525),
-        surfaceContainerHighest: const Color(0xFF2C2C2C),
+        surfaceContainerLow: Colors.black,
+        surfaceContainer: Colors.black,
+        surfaceContainerHigh: Colors.black,
+        surfaceContainerHighest: const Color(0xFF121212),
       ),
-      fontFamily: _fontFamily,
       scaffoldBackgroundColor: Colors.black,
       canvasColor: Colors.black,
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF121212),
+        backgroundColor: Colors.black,
         surfaceTintColor: Colors.transparent,
       ),
       bottomAppBarTheme: const BottomAppBarThemeData(
-        color: Color(0xFF121212),
+        color: Colors.black,
       ),
       dialogTheme: const DialogThemeData(
-        backgroundColor: Color(0xFF1E1E1E),
+        backgroundColor: Colors.black,
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Color(0xFF1E1E1E),
+        backgroundColor: Colors.black,
         surfaceTintColor: Colors.transparent,
       ),
       drawerTheme: const DrawerThemeData(
-        backgroundColor: Color(0xFF121212),
+        backgroundColor: Colors.black,
       ),
       cardTheme: const CardThemeData(
-        color: Color(0xFF1E1E1E),
+        color: Colors.black,
       ),
     );
   }();

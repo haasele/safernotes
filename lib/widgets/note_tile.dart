@@ -34,8 +34,10 @@ class NoteTileWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Pick colors from the accent colors based on index
-    final color = NotesColor.getNoteColor(notIndex: index);
+    final color = NotesColor.getNoteColor(
+      notIndex: index,
+      fallback: Theme.of(context).colorScheme.surfaceContainerHigh,
+    );
     final fontColor = getFontColorForBackground(color);
 
     DateTime now = DateTime.now();
@@ -52,52 +54,50 @@ class NoteTileWidget extends StatelessWidget {
           )
         : DateFormat.yMMMd().format(note.createdTime);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: color,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        //crossAxisAlignment: CrossAxisAlignment.start,
-        //mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AutoSizeText(
-            sanitize(note.title),
-            textDirection: getTextDirecton(note.title),
-            style: TextStyle(
-              color: fontColor,
-              fontSize: 20,
-              height: 1.2,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'MerriweatherBlack',
+    return Card(
+      color: color,
+      shadowColor: Theme.of(context).colorScheme.shadow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AutoSizeText(
+              sanitize(note.title),
+              textDirection: getTextDirecton(note.title),
+              style: TextStyle(
+                color: fontColor,
+                fontSize: 20,
+                height: 1.2,
+                fontWeight: FontWeight.bold,
+              ),
+              minFontSize: 20,
+              maxLines: 1,
+              overflow: TextOverflow.clip,
             ),
-            minFontSize: 20,
-            maxLines: 1,
-            overflow: TextOverflow.clip,
-          ),
-          const SizedBox.square(dimension: 5),
-          Text(
-            time,
-            textDirection: getTextDirecton(time),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: fontColor,
+            const SizedBox.square(dimension: 5),
+            Text(
+              time,
+              textDirection: getTextDirecton(time),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: fontColor,
+              ),
             ),
-          ),
-          const SizedBox.square(dimension: 5),
-          AutoSizeText(
-            sanitize(note.description),
-            textDirection: getTextDirecton(note.description),
-            style: TextStyle(color: fontColor, fontSize: 16, height: 1.2),
-            minFontSize: 16,
-            maxLines: 2,
-            overflow: TextOverflow.clip,
-          ),
-        ],
+            const SizedBox.square(dimension: 5),
+            AutoSizeText(
+              sanitize(note.description),
+              textDirection: getTextDirecton(note.description),
+              style: TextStyle(color: fontColor, fontSize: 16, height: 1.2),
+              minFontSize: 16,
+              maxLines: 2,
+              overflow: TextOverflow.clip,
+            ),
+          ],
+        ),
       ),
     );
   }

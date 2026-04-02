@@ -20,11 +20,9 @@ import 'package:easy_localization/easy_localization.dart';
 // Project imports:
 import 'package:safenotes/data/preference_and_config.dart';
 
-Widget footer({bool showVersion = false}) {
+Widget footer(BuildContext context, {bool showVersion = false}) {
   const double fontSize = 12;
-  final Color color = PreferencesStorage.isThemeDark
-      ? const Color(0xFFafb8ba)
-      : const Color(0xFF8e989c);
+  final Color color = Theme.of(context).colorScheme.onSurfaceVariant;
   final TextStyle style = TextStyle(color: color, fontSize: fontSize);
   final footerSecondText = 'Made with ♥ on Earth'.tr().split('♥');
   final madeWith = footerSecondText[0];

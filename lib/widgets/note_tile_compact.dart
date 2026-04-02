@@ -35,29 +35,31 @@ class NoteTileWidgetCompact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Pick colors from the accent colors based on index
-    final color = NotesColor.getNoteColor(notIndex: index);
+    final color = NotesColor.getNoteColor(
+      notIndex: index,
+      fallback: Theme.of(context).colorScheme.surfaceContainerHigh,
+    );
     final fontColor = getFontColorForBackground(color);
     final previewText = note.title == ' ' ? note.description : note.title;
 
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(5),
-        color: color,
-      ),
-      child: AutoSizeText(
-        sanitize(previewText),
-        textDirection: getTextDirecton(previewText),
-        style: TextStyle(
-          color: fontColor,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'MerriweatherBlack',
+    return Card(
+      color: color,
+      shadowColor: Theme.of(context).colorScheme.shadow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: AutoSizeText(
+          sanitize(previewText),
+          textDirection: getTextDirecton(previewText),
+          style: TextStyle(
+            color: fontColor,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          minFontSize: 15,
+          maxLines: 2,
+          overflow: TextOverflow.clip,
         ),
-        minFontSize: 15,
-        maxLines: 2,
-        overflow: TextOverflow.clip,
       ),
     );
   }

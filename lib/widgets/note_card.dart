@@ -35,7 +35,10 @@ class NoteCardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Pick colors from the accent colors based on index
-    final color = NotesColor.getNoteColor(notIndex: index);
+    final color = NotesColor.getNoteColor(
+      notIndex: index,
+      fallback: Theme.of(context).colorScheme.surfaceContainerHigh,
+    );
     final fontColor = getFontColorForBackground(color);
 
     DateTime now = DateTime.now();
@@ -55,7 +58,7 @@ class NoteCardWidget extends StatelessWidget {
     return Card(
       shadowColor: Theme.of(context).colorScheme.shadow,
       color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -71,7 +74,6 @@ class NoteCardWidget extends StatelessWidget {
                 fontSize: 20,
                 height: 1.2,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'MerriweatherBlack',
               ),
               minFontSize: 20,
               maxLines: 2,

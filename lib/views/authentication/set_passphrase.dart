@@ -89,7 +89,7 @@ class SetEncryptionPhrasePageState extends State<SetEncryptionPhrasePage> {
                     const Spacer(),
                     Padding(
                       padding: const EdgeInsets.only(top: 5),
-                      child: footer(),
+                      child: footer(context),
                     ),
                   ],
                 ),

@@ -18,7 +18,6 @@ import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
 // Project imports:
-import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/models/safenote.dart';
 import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/utils/string_utils.dart';
@@ -36,16 +35,18 @@ class NoteCardWidgetCompact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Pick colors from the accent colors based on index
-    final color = NotesColor.getNoteColor(notIndex: index);
+    final color = NotesColor.getNoteColor(
+      notIndex: index,
+      fallback: Theme.of(context).colorScheme.surfaceContainerHigh,
+    );
     final fontColor = getFontColorForBackground(color);
     final previewText = note.title == ' ' ? note.description : note.title;
 
     return Card(
-      shadowColor: PreferencesStorage.isThemeDark ? Colors.white : Colors.black,
+      shadowColor: Theme.of(context).colorScheme.shadow,
       color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-      child: Container(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
         padding: const EdgeInsets.all(10),
         child: AutoSizeText(
           sanitize(previewText),
@@ -54,7 +55,6 @@ class NoteCardWidgetCompact extends StatelessWidget {
             color: fontColor,
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            fontFamily: 'MerriweatherBlack',
           ),
           minFontSize: 15,
           maxLines: 2,

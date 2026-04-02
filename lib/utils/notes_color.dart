@@ -18,13 +18,14 @@ import 'package:flutter/material.dart';
 import 'package:safenotes/data/preference_and_config.dart';
 
 class NotesColor extends ChangeNotifier {
-  static Color getNoteColor({required int notIndex}) {
+  static Color getNoteColor({required int notIndex, Color? fallback}) {
+    if (!PreferencesStorage.isColorful) {
+      return fallback ?? const Color(0xFFA7BEAE);
+    }
     var lightColors =
         allNotesColorTheme[PreferencesStorage.colorfulNotesColorIndex]
             .colorList;
-    return PreferencesStorage.isColorful
-        ? lightColors[notIndex % lightColors.length]
-        : const Color(0xFFA7BEAE);
+    return lightColors[notIndex % lightColors.length];
   }
 
   void toggleColor() {
