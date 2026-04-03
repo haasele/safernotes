@@ -24,6 +24,8 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 
 // Project imports:
 import 'package:safenotes/utils/document_utils.dart';
+import 'package:safenotes/widgets/appflowy_floating_format_bar.dart';
+import 'package:safenotes/widgets/safenotes_link_toolbar.dart';
 
 class MarkdownNoteEditor extends StatefulWidget {
   final String initialContent;
@@ -119,6 +121,7 @@ class MarkdownNoteEditorState extends State<MarkdownNoteEditor> {
             ? []
             : standardCommandShortcutEvents,
         footer: null,
+        autoScrollEdgeOffset: _isMobile ? 300.0 : 220.0,
       ),
     );
 
@@ -127,28 +130,26 @@ class MarkdownNoteEditorState extends State<MarkdownNoteEditor> {
     }
 
     final cs = Theme.of(context).colorScheme;
-    final barBg = isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF2F2F2);
-    final barFg = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final toolbarItems = <MobileToolbarItem>[
+      textDecorationMobileToolbarItemV2,
+      buildTextAndBackgroundColorMobileToolbarItem(),
+      blocksMobileToolbarItem,
+      safenotesLinkMobileToolbarItem,
+      dividerMobileToolbarItem,
+    ];
 
-    return MobileToolbarV2(
-      editorState: _editorState,
-      toolbarHeight: 50.0,
-      backgroundColor: barBg,
-      foregroundColor: barFg,
-      iconColor: barFg,
-      itemHighlightColor: cs.primary,
-      tabBarSelectedForegroundColor: barFg,
-      tabBarSelectedBackgroundColor: barFg.withValues(alpha: 0.15),
-      primaryColor: cs.primary,
-      onPrimaryColor: cs.onPrimary,
-      toolbarItems: [
-        textDecorationMobileToolbarItemV2,
-        buildTextAndBackgroundColorMobileToolbarItem(),
-        blocksMobileToolbarItem,
-        linkMobileToolbarItem,
-        dividerMobileToolbarItem,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(child: editor),
+        AppflowyFloatingFormatBar(
+          editorState: _editorState,
+          toolbarItems: toolbarItems,
+          isDark: isDark,
+          primaryColor: cs.primary,
+          onPrimaryColor: cs.onPrimary,
+        ),
       ],
-      child: editor,
     );
   }
 

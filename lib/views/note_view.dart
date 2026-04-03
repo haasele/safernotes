@@ -24,9 +24,10 @@ import 'package:local_session_timeout/local_session_timeout.dart';
 
 // Project imports:
 import 'package:safenotes/data/database_handler.dart';
+import 'package:safenotes/data/preference_and_config.dart';
 import 'package:safenotes/dialogs/delete_confirmation.dart';
 import 'package:safenotes/models/safenote.dart';
-import 'package:safenotes/routes/route_generator.dart';
+import 'package:safenotes/services/text_note_autosave.dart';
 import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/utils/text_direction_util.dart';
 import 'package:safenotes/widgets/attachment_preview.dart';
@@ -53,16 +54,78 @@ class NoteDetailPageState extends State<NoteDetailPage> {
   late SafeNote note;
   bool isLoading = false;
 
+  GlobalKey<MarkdownNoteEditorState> _editorKey =
+      GlobalKey<MarkdownNoteEditorState>();
+  TextEditingController? _titleController;
+  TextNoteAutosaveController? _autosave;
+  String _bodyDescription = '';
+  String _bodyContentFormat = 'plain';
+
   @override
   void initState() {
     super.initState();
     refreshNote();
   }
 
-  Future refreshNote() async {
+  @override
+  void dispose() {
+    _titleController?.removeListener(_scheduleDetailAutosave);
+    _titleController?.dispose();
+    _autosave?.dispose();
+    super.dispose();
+  }
+
+  Future<void> refreshNote() async {
     setState(() => isLoading = true);
     note = await NotesDatabase.instance.decryptReadNote(widget.noteId);
+    _titleController?.removeListener(_scheduleDetailAutosave);
+    _titleController?.dispose();
+    _autosave?.dispose();
+
+    _autosave = TextNoteAutosaveController(
+      seed: note,
+      onPersisted: (saved) {
+        if (mounted) setState(() => note = saved);
+      },
+    );
+    _bodyDescription = note.description;
+    _bodyContentFormat = note.contentFormat;
+    _titleController = TextEditingController(
+      text: note.title == ' ' ? '' : note.title,
+    );
+    _titleController!.addListener(_scheduleDetailAutosave);
+
+    _editorKey = GlobalKey<MarkdownNoteEditorState>();
+
     setState(() => isLoading = false);
+  }
+
+  void _scheduleDetailAutosave() {
+    if (!mounted || _autosave == null || _titleController == null) return;
+    if (note.noteType != 'text') return;
+
+    final body = _editorKey.currentState != null
+        ? _editorKey.currentState!.getSerializedContent()
+        : _bodyDescription;
+
+    _autosave!.scheduleSave(
+      titleUi: _titleController!.text,
+      body: body,
+      noteType: note.noteType,
+      contentFormat: _bodyContentFormat,
+      onError: (e, _) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save note: $e')),
+        );
+      },
+    );
+  }
+
+  void _onBodyChanged(String serialized) {
+    _bodyDescription = serialized;
+    _bodyContentFormat = 'document';
+    _scheduleDetailAutosave();
   }
 
   Color? _noteColor(BuildContext context) {
@@ -88,7 +151,7 @@ class NoteDetailPageState extends State<NoteDetailPage> {
     return AppBar(
       backgroundColor: bg ?? Theme.of(context).appBarTheme.backgroundColor,
       title: isLoading ? Text('Loading...'.tr()) : null,
-      actions: isLoading ? null : [editButton(), deleteButton()],
+      actions: isLoading ? null : [deleteButton()],
     );
   }
 
@@ -102,17 +165,37 @@ class NoteDetailPageState extends State<NoteDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: SelectableText(
-              note.title,
-              textDirection: getTextDirecton(note.title),
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+          if (note.noteType == 'text' && _titleController != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: TextFormField(
+                controller: _titleController,
+                maxLines: 2,
+                textDirection: getTextDirecton(_titleController!.text),
+                enableIMEPersonalizedLearning:
+                    !PreferencesStorage.keyboardIncognito,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Title'.tr(),
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: SelectableText(
+                note.title,
+                textDirection: getTextDirecton(note.title),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Text(
@@ -145,21 +228,12 @@ class NoteDetailPageState extends State<NoteDetailPage> {
   }
 
   Widget _buildTextContent() {
-    if (note.contentFormat == 'document') {
-      return MarkdownNoteEditor(
-        initialContent: note.description,
-        contentFormat: note.contentFormat,
-        readOnly: true,
-      );
-    }
-    return ListView(
-      children: [
-        SelectableText(
-          note.description,
-          textDirection: getTextDirecton(note.description),
-          style: const TextStyle(fontSize: 18),
-        ),
-      ],
+    return MarkdownNoteEditor(
+      key: _editorKey,
+      initialContent: _bodyDescription,
+      contentFormat: _bodyContentFormat,
+      readOnly: false,
+      onChanged: _onBodyChanged,
     );
   }
 
@@ -182,7 +256,7 @@ class NoteDetailPageState extends State<NoteDetailPage> {
         return ListView.separated(
           padding: const EdgeInsets.symmetric(vertical: 8),
           itemCount: attachments.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
           itemBuilder: (_, i) => buildAttachmentPreview(attachments[i]),
         );
       },
@@ -232,25 +306,6 @@ class NoteDetailPageState extends State<NoteDetailPage> {
     );
   }
 
-  Widget editButton() {
-    return IconButton(
-      icon: const Icon(Icons.edit_outlined),
-      onPressed: () async {
-        if (isLoading) return;
-        await Navigator.pushNamed(
-          context,
-          '/editnote',
-          arguments: AddEditNoteArguments(
-            sessionStream: widget.sessionStateStream,
-            note: note,
-            noteIndex: widget.noteIndex,
-          ),
-        );
-        refreshNote();
-      },
-    );
-  }
-
   Widget deleteButton() {
     return IconButton(
       icon: const Icon(Icons.delete),
@@ -260,7 +315,7 @@ class NoteDetailPageState extends State<NoteDetailPage> {
     );
   }
 
-  confirmAndDeleteDialog(BuildContext context) async {
+  Future<void> confirmAndDeleteDialog(BuildContext context) async {
     return showDialog(
       context: context,
       barrierDismissible: true,

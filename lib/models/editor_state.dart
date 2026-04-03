@@ -51,6 +51,22 @@ class NoteEditorState {
     wasNoteSaveAttempted = false;
   }
 
+  /// After a successful DB write without clearing the editor (auto-save).
+  static void applyPersistedSnapshot({
+    required SafeNote note,
+    required String titleUi,
+    required String descriptionSerialized,
+    required String persistedContentFormat,
+    required String persistedNoteType,
+  }) {
+    original = note;
+    title = titleUi;
+    description = descriptionSerialized;
+    contentFormat = persistedContentFormat;
+    noteType = persistedNoteType;
+    wasNoteSaveAttempted = true;
+  }
+
   Future<void> handleUngracefulNoteExit() async {
     if (wasNoteSaveAttempted == false &&
         (title.isNotEmpty || description.isNotEmpty)) {

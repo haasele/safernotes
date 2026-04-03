@@ -24,6 +24,7 @@ import 'package:local_session_timeout/local_session_timeout.dart';
 // Project imports:
 import 'package:safenotes/models/editor_state.dart';
 import 'package:safenotes/models/safenote.dart';
+import 'package:safenotes/services/text_note_autosave.dart';
 import 'package:safenotes/utils/notes_color.dart';
 import 'package:safenotes/widgets/markdown_editor.dart';
 import 'package:safenotes/widgets/note_widget.dart';
@@ -50,12 +51,12 @@ class AddEditNotePageState extends State<AddEditNotePage> {
   final _formKey = GlobalKey<FormState>();
   final _editorKey = GlobalKey<MarkdownNoteEditorState>();
   late final TextEditingController _titleController;
+  late final TextNoteAutosaveController _autosave;
 
   late String description;
   late String contentFormat;
-  Timer? _descriptionDebounce;
 
-  /// When true, [PopScope] must not auto-save (explicit Save already persisted).
+  /// When true, [PopScope] must not flush again (explicit close already ran).
   bool _skipPopAutoSave = false;
 
   @override
@@ -63,10 +64,12 @@ class AddEditNotePageState extends State<AddEditNotePage> {
     super.initState();
     var t = widget.note?.title ?? '';
     description = widget.note?.description ?? '';
-    contentFormat = widget.note?.contentFormat ?? 'plain';
+    contentFormat = widget.note?.contentFormat ?? 'document';
     t = t == ' ' ? '' : t;
     description = description == ' ' ? '' : description;
     _titleController = TextEditingController(text: t);
+    _titleController.addListener(_scheduleAutosave);
+    _autosave = TextNoteAutosaveController(seed: widget.note);
     NoteEditorState.setSaveAttempted(false);
     NoteEditorState.setState(
       widget.note,
@@ -79,8 +82,9 @@ class AddEditNotePageState extends State<AddEditNotePage> {
 
   @override
   void dispose() {
-    _descriptionDebounce?.cancel();
+    _titleController.removeListener(_scheduleAutosave);
     _titleController.dispose();
+    _autosave.dispose();
     super.dispose();
   }
 
@@ -105,6 +109,28 @@ class AddEditNotePageState extends State<AddEditNotePage> {
     );
   }
 
+  void _scheduleAutosave() {
+    if (!mounted) return;
+    final body =
+        _editorKey.currentState?.getSerializedContent() ?? description;
+    description = body;
+    contentFormat = 'document';
+    _autosave.scheduleSave(
+      titleUi: _titleController.text,
+      body: body,
+      noteType: widget.note?.noteType ?? widget.noteType,
+      contentFormat: 'document',
+      onError: _onAutosaveError,
+    );
+  }
+
+  void _onAutosaveError(Object e, StackTrace _) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not save note: $e')),
+    );
+  }
+
   void _onDescriptionChanged(String newDescription) {
     description = newDescription;
     contentFormat = 'document';
@@ -115,15 +141,27 @@ class AddEditNotePageState extends State<AddEditNotePage> {
       contentFormat: 'document',
       noteType: widget.note?.noteType ?? widget.noteType,
     );
-    _descriptionDebounce?.cancel();
-    _descriptionDebounce = Timer(const Duration(milliseconds: 300), () {
-      if (mounted) setState(() {});
-    });
+    _scheduleAutosave();
   }
 
-  /// Updates static editor state only — no [setState] (keeps AppFlowy subtree stable).
   void _onTitleChanged(String _) {
     _syncNoteEditorFromTitle();
+    _scheduleAutosave();
+  }
+
+  Future<void> _flushAndPop() async {
+    final navigator = Navigator.of(context);
+    final body =
+        _editorKey.currentState?.getSerializedContent() ?? description;
+    await _autosave.flush(
+      titleUi: _titleController.text,
+      body: body,
+      noteType: widget.note?.noteType ?? widget.noteType,
+      contentFormat: 'document',
+      onError: _onAutosaveError,
+    );
+    _skipPopAutoSave = true;
+    if (mounted) navigator.pop();
   }
 
   @override
@@ -134,16 +172,17 @@ class AddEditNotePageState extends State<AddEditNotePage> {
       canPop: true,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop || _skipPopAutoSave) return;
-        if (isNoteNewOrContentChanged()) {
-          NoteEditorState.setState(
-            widget.note,
-            _titleController.text,
-            _editorKey.currentState?.getSerializedContent() ?? description,
-            contentFormat: 'document',
+        final body =
+            _editorKey.currentState?.getSerializedContent() ?? description;
+        unawaited(
+          _autosave.flush(
+            titleUi: _titleController.text,
+            body: body,
             noteType: widget.note?.noteType ?? widget.noteType,
-          );
-          NoteEditorState().addOrUpdateNote();
-        }
+            contentFormat: 'document',
+            onError: _onAutosaveError,
+          ),
+        );
       },
       child: Scaffold(
         backgroundColor: bg,
@@ -151,9 +190,18 @@ class AddEditNotePageState extends State<AddEditNotePage> {
         appBar: AppBar(
           backgroundColor: bg ?? Theme.of(context).appBarTheme.backgroundColor,
           actions: [
-            ListenableBuilder(
-              listenable: _titleController,
-              builder: (context, _) => buildButton(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              child: TextButton(
+                onPressed: _flushAndPop,
+                child: Text(
+                  'Done'.tr(),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -175,58 +223,5 @@ class AddEditNotePageState extends State<AddEditNotePage> {
         onChangedDescription: _onDescriptionChanged,
       ),
     );
-  }
-
-  Widget buildButton() {
-    final isFormValid =
-        title.isNotEmpty || NoteEditorState.description.isNotEmpty;
-    const double buttonFontSize = 17.0;
-    final String buttonText = 'Save'.tr();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        ),
-        onPressed: isFormValid ? onSaveCallback : null,
-        child: Text(
-          buttonText,
-          style: const TextStyle(
-            fontSize: buttonFontSize,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> onSaveCallback() async {
-    final navigator = Navigator.of(context);
-    NoteEditorState.setState(
-      widget.note,
-      _titleController.text,
-      _editorKey.currentState?.getSerializedContent() ?? description,
-      contentFormat: 'document',
-      noteType: widget.note?.noteType ?? widget.noteType,
-    );
-    await NoteEditorState().addOrUpdateNote();
-    _skipPopAutoSave = true;
-    if (mounted) navigator.pop();
-  }
-
-  bool isNoteNewOrContentChanged() {
-    final body =
-        _editorKey.currentState?.getSerializedContent() ?? description;
-    if (widget.note == null) {
-      if (title.isNotEmpty || body.isNotEmpty) return true;
-    } else {
-      if (widget.note?.title != title && title != '' ||
-          widget.note?.description != body && body != '') {
-        return true;
-      }
-    }
-    return false;
   }
 }

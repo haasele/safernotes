@@ -79,6 +79,11 @@ String serializeDocument(Document document) {
   return documentToJson(document);
 }
 
+/// Serialized JSON for an empty editable document (single empty paragraph).
+String serializedBlankDocument() {
+  return serializeDocument(Document.blank(withInitialText: true));
+}
+
 String extractPreviewText(String description, String contentFormat) {
   if (contentFormat == 'document' && isDocumentJson(description)) {
     try {
