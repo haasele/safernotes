@@ -29,8 +29,8 @@ import 'package:safenotes/widgets/markdown_editor.dart';
 class NoteFormWidget extends StatelessWidget {
   final StreamController<SessionState> sessionStateStream;
 
-  final String? title;
-  final String? description;
+  final TextEditingController titleController;
+  final String description;
   final String contentFormat;
   final ValueChanged<String> onChangedTitle;
   final ValueChanged<String> onChangedDescription;
@@ -39,7 +39,7 @@ class NoteFormWidget extends StatelessWidget {
 
   const NoteFormWidget({
     Key? key,
-    this.title = '',
+    required this.titleController,
     this.description = '',
     this.contentFormat = 'plain',
     required this.onChangedTitle,
@@ -55,7 +55,7 @@ class NoteFormWidget extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(allSidePadding),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildTitle(),
           const Divider(height: 1),
@@ -63,7 +63,7 @@ class NoteFormWidget extends StatelessWidget {
           Expanded(
             child: MarkdownNoteEditor(
               key: editorKey,
-              initialContent: description ?? '',
+              initialContent: description,
               contentFormat: contentFormat,
               readOnly: false,
               onChanged: onChangedDescription,
@@ -81,11 +81,11 @@ class NoteFormWidget extends StatelessWidget {
     final bool enableIMEPLFlag = !PreferencesStorage.keyboardIncognito;
 
     return TextFormField(
-      autofocus: true,
+      controller: titleController,
+      autofocus: false,
       enableIMEPersonalizedLearning: enableIMEPLFlag,
       maxLines: maxLinesToShowAtTimeTitle,
-      textDirection: getTextDirecton(title!),
-      initialValue: title,
+      textDirection: getTextDirecton(titleController.text),
       enableInteractiveSelection: true,
       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize),
       decoration: InputDecoration(

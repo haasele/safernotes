@@ -134,7 +134,7 @@ class _DrawingEditorState extends State<DrawingEditor> {
       } else {
         _currentStroke = _DrawStroke(
           points: [pos],
-          color: _tool == DrawingTool.eraser ? Colors.white : _color,
+          color: _tool == DrawingTool.eraser ? Colors.transparent : _color,
           width: _tool == DrawingTool.eraser
               ? _strokeWidth * 4
               : _strokeWidth,
@@ -253,6 +253,7 @@ class _DrawingEditorState extends State<DrawingEditor> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final canvasBg = isDark ? Colors.grey.shade900 : Colors.white;
 
     return Scaffold(
       appBar: AppBar(
@@ -313,7 +314,7 @@ class _DrawingEditorState extends State<DrawingEditor> {
                       onPanUpdate: _onPanUpdate,
                       onPanEnd: _onPanEnd,
                       child: Container(
-                        color: isDark ? Colors.grey.shade900 : Colors.white,
+                        color: canvasBg,
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -326,6 +327,7 @@ class _DrawingEditorState extends State<DrawingEditor> {
                               painter: _DrawingPainter(
                                 strokes: _strokes,
                                 currentStroke: _currentStroke,
+                                canvasBackground: canvasBg,
                               ),
                               size: Size.infinite,
                             ),
@@ -454,8 +456,13 @@ class _DrawStroke {
 class _DrawingPainter extends CustomPainter {
   final List<_DrawStroke> strokes;
   final _DrawStroke? currentStroke;
+  final Color canvasBackground;
 
-  _DrawingPainter({required this.strokes, this.currentStroke});
+  _DrawingPainter({
+    required this.strokes,
+    this.currentStroke,
+    required this.canvasBackground,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -465,13 +472,15 @@ class _DrawingPainter extends CustomPainter {
   }
 
   void _paintStroke(Canvas canvas, _DrawStroke stroke) {
+    final effectiveColor =
+        stroke.isEraser ? canvasBackground : stroke.color;
     final paint = Paint()
-      ..color = stroke.color
+      ..color = effectiveColor
       ..strokeWidth = stroke.width
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke
-      ..blendMode = stroke.isEraser ? BlendMode.clear : BlendMode.srcOver;
+      ..blendMode = BlendMode.srcOver;
 
     if (stroke.tool == DrawingTool.line && stroke.points.length == 2) {
       canvas.drawLine(stroke.points.first, stroke.points.last, paint);

@@ -25,6 +25,7 @@ import 'package:local_session_timeout/local_session_timeout.dart';
 // Project imports:
 import 'package:safenotes/data/database_handler.dart';
 import 'package:safenotes/models/safenote.dart';
+import 'package:uuid/uuid.dart';
 
 class ChecklistEditor extends StatefulWidget {
   final StreamController<SessionState> sessionStateStream;
@@ -53,7 +54,7 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
       _titleController.text = widget.note!.title;
       _items = _parseItems(widget.note!.description);
     } else {
-      _items = [_CheckItem(text: '', checked: false)];
+      _items = [_CheckItem(id: Uuid().v4(), text: '', checked: false)];
     }
     _syncNodesAndControllers();
   }
@@ -75,17 +76,19 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
       final list = jsonDecode(description) as List;
       return list
           .map((e) => _CheckItem(
+                id: e['id'] as String? ?? Uuid().v4(),
                 text: e['text'] as String? ?? '',
                 checked: e['checked'] as bool? ?? false,
               ))
           .toList();
     } catch (_) {
       if (description.trim().isEmpty || description == ' ') {
-        return [_CheckItem(text: '', checked: false)];
+        return [_CheckItem(id: Uuid().v4(), text: '', checked: false)];
       }
       return description
           .split('\n')
-          .map((l) => _CheckItem(text: l, checked: false))
+          .map((l) =>
+              _CheckItem(id: Uuid().v4(), text: l, checked: false))
           .toList();
     }
   }
@@ -93,7 +96,9 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
   String _serializeItems() {
     _syncItemsFromControllers();
     return jsonEncode(
-      _items.map((i) => {'text': i.text, 'checked': i.checked}).toList(),
+      _items
+          .map((i) => {'id': i.id, 'text': i.text, 'checked': i.checked})
+          .toList(),
     );
   }
 
@@ -123,7 +128,10 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
   void _addItem(int afterIndex) {
     _syncItemsFromControllers();
     setState(() {
-      _items.insert(afterIndex + 1, _CheckItem(text: '', checked: false));
+      _items.insert(
+        afterIndex + 1,
+        _CheckItem(id: Uuid().v4(), text: '', checked: false),
+      );
       _syncNodesAndControllers();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -147,16 +155,16 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
     });
   }
 
-  void _reorderItem(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) newIndex--;
+  void _moveItem(int from, int to) {
+    if (to < 0 || to >= _items.length || from == to) return;
     _syncItemsFromControllers();
     setState(() {
-      final item = _items.removeAt(oldIndex);
-      _items.insert(newIndex, item);
-      final ctrl = _controllers.removeAt(oldIndex);
-      _controllers.insert(newIndex, ctrl);
-      final fn = _focusNodes.removeAt(oldIndex);
-      _focusNodes.insert(newIndex, fn);
+      final item = _items.removeAt(from);
+      _items.insert(to, item);
+      final ctrl = _controllers.removeAt(from);
+      _controllers.insert(to, ctrl);
+      final fn = _focusNodes.removeAt(from);
+      _focusNodes.insert(to, fn);
     });
   }
 
@@ -233,13 +241,41 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
           ),
           const Divider(height: 1),
           Expanded(
-            child: ReorderableListView.builder(
+            child: ListView.builder(
               itemCount: _items.length,
-              buildDefaultDragHandles: false,
-              onReorder: _reorderItem,
               itemBuilder: (context, index) {
                 final item = _items[index];
-                return _buildCheckItem(item, index, cs);
+                return _ChecklistRow(
+                  key: ValueKey(item.id),
+                  item: item,
+                  index: index,
+                  itemCount: _items.length,
+                  controller: _controllers[index],
+                  focusNode: _focusNodes[index],
+                  colorScheme: cs,
+                  onChecked: (v) {
+                    setState(() {
+                      _items[index] = item.copyWith(checked: v);
+                    });
+                  },
+                  onEditingLineComplete: () {
+                    if (index < _items.length - 1) {
+                      if (index + 1 < _focusNodes.length) {
+                        _focusNodes[index + 1].requestFocus();
+                      }
+                    } else {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        _addItem(index);
+                      });
+                    }
+                  },
+                  onDismissed: () => _removeItem(index),
+                  onMoveUp: index > 0 ? () => _moveItem(index, index - 1) : null,
+                  onMoveDown: index < _items.length - 1
+                      ? () => _moveItem(index, index + 1)
+                      : null,
+                );
               },
             ),
           ),
@@ -252,12 +288,56 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
       ),
     );
   }
+}
 
-  Widget _buildCheckItem(_CheckItem item, int index, ColorScheme cs) {
+class _ChecklistRow extends StatefulWidget {
+  final _CheckItem item;
+  final int index;
+  final int itemCount;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final ColorScheme colorScheme;
+  final ValueChanged<bool?> onChecked;
+  final VoidCallback onEditingLineComplete;
+  final VoidCallback onDismissed;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+
+  const _ChecklistRow({
+    super.key,
+    required this.item,
+    required this.index,
+    required this.itemCount,
+    required this.controller,
+    required this.focusNode,
+    required this.colorScheme,
+    required this.onChecked,
+    required this.onEditingLineComplete,
+    required this.onDismissed,
+    this.onMoveUp,
+    this.onMoveDown,
+  });
+
+  @override
+  State<_ChecklistRow> createState() => _ChecklistRowState();
+}
+
+class _ChecklistRowState extends State<_ChecklistRow>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final item = widget.item;
+    final cs = widget.colorScheme;
+    final isLast = widget.index == widget.itemCount - 1;
+
     return Dismissible(
-      key: ObjectKey(_controllers[index]),
+      key: ValueKey('dismiss_${item.id}'),
       direction: DismissDirection.endToStart,
-      onDismissed: (_) => _removeItem(index),
+      onDismissed: (_) => widget.onDismissed(),
       background: Container(
         alignment: Alignment.centerRight,
         color: cs.error,
@@ -265,16 +345,15 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
         child: Icon(Icons.delete, color: cs.onError),
       ),
       child: ListTile(
-        key: ValueKey('tile_$index'),
         leading: Checkbox(
           value: item.checked,
-          onChanged: (val) {
-            setState(() => _items[index] = item.copyWith(checked: val));
-          },
+          onChanged: widget.onChecked,
         ),
         title: TextField(
-          controller: _controllers[index],
-          focusNode: index < _focusNodes.length ? _focusNodes[index] : null,
+          controller: widget.controller,
+          focusNode: widget.focusNode,
+          textInputAction:
+              isLast ? TextInputAction.done : TextInputAction.next,
           decoration: const InputDecoration(
             border: InputBorder.none,
             isDense: true,
@@ -285,11 +364,24 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
                 item.checked ? TextDecoration.lineThrough : null,
             color: item.checked ? cs.outline : cs.onSurface,
           ),
-          onSubmitted: (_) => _addItem(index),
+          onEditingComplete: widget.onEditingLineComplete,
         ),
-        trailing: ReorderableDragStartListener(
-          index: index,
-          child: const Icon(Icons.drag_handle),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_upward, size: 20),
+              onPressed: widget.onMoveUp,
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Move up',
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_downward, size: 20),
+              onPressed: widget.onMoveDown,
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Move down',
+            ),
+          ],
         ),
       ),
     );
@@ -297,12 +389,18 @@ class _ChecklistEditorState extends State<ChecklistEditor> {
 }
 
 class _CheckItem {
+  final String id;
   final String text;
   final bool checked;
 
-  const _CheckItem({required this.text, required this.checked});
+  const _CheckItem({
+    required this.id,
+    required this.text,
+    required this.checked,
+  });
 
   _CheckItem copyWith({String? text, bool? checked}) => _CheckItem(
+    id: id,
     text: text ?? this.text,
     checked: checked ?? this.checked,
   );

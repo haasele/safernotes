@@ -12,6 +12,7 @@
 */
 
 // Dart imports:
+import 'dart:async';
 import 'dart:io';
 
 // Flutter imports:
@@ -47,6 +48,7 @@ class MarkdownNoteEditor extends StatefulWidget {
 class MarkdownNoteEditorState extends State<MarkdownNoteEditor> {
   late EditorState _editorState;
   late EditorScrollController _scrollController;
+  StreamSubscription<dynamic>? _transactionSub;
 
   EditorState get editorState => _editorState;
 
@@ -62,12 +64,13 @@ class MarkdownNoteEditorState extends State<MarkdownNoteEditor> {
       widget.contentFormat,
     );
     _editorState = EditorState(document: document);
+    _editorState.editable = !widget.readOnly;
     _scrollController = EditorScrollController(
       editorState: _editorState,
     );
 
     if (!widget.readOnly && widget.onChanged != null) {
-      _editorState.transactionStream.listen((_) {
+      _transactionSub = _editorState.transactionStream.listen((_) {
         final serialized = serializeDocument(_editorState.document);
         widget.onChanged?.call(serialized);
       });
@@ -76,9 +79,18 @@ class MarkdownNoteEditorState extends State<MarkdownNoteEditor> {
 
   @override
   void dispose() {
+    _transactionSub?.cancel();
     _editorState.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(MarkdownNoteEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.readOnly != widget.readOnly) {
+      _editorState.editable = !widget.readOnly;
+    }
   }
 
   String getSerializedContent() {
@@ -94,22 +106,49 @@ class MarkdownNoteEditorState extends State<MarkdownNoteEditor> {
 
     final editorStyle = _buildEditorStyle(context, isDark);
 
-    if (widget.readOnly) {
-      _editorState.editable = false;
+    final editor = RepaintBoundary(
+      child: AppFlowyEditor(
+        editorState: _editorState,
+        editorScrollController: _scrollController,
+        editorStyle: editorStyle,
+        blockComponentBuilders: standardBlockComponentBuilderMap,
+        characterShortcutEvents: widget.readOnly
+            ? []
+            : standardCharacterShortcutEvents,
+        commandShortcutEvents: widget.readOnly
+            ? []
+            : standardCommandShortcutEvents,
+        footer: null,
+      ),
+    );
+
+    if (!_isMobile || widget.readOnly) {
+      return editor;
     }
 
-    return AppFlowyEditor(
+    final cs = Theme.of(context).colorScheme;
+    final barBg = isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF2F2F2);
+    final barFg = isDark ? Colors.white : const Color(0xFF1A1A1A);
+
+    return MobileToolbarV2(
       editorState: _editorState,
-      editorScrollController: _scrollController,
-      editorStyle: editorStyle,
-      blockComponentBuilders: standardBlockComponentBuilderMap,
-      characterShortcutEvents: widget.readOnly
-          ? []
-          : standardCharacterShortcutEvents,
-      commandShortcutEvents: widget.readOnly
-          ? []
-          : standardCommandShortcutEvents,
-      footer: widget.readOnly ? null : _buildMobileToolbar(context),
+      toolbarHeight: 50.0,
+      backgroundColor: barBg,
+      foregroundColor: barFg,
+      iconColor: barFg,
+      itemHighlightColor: cs.primary,
+      tabBarSelectedForegroundColor: barFg,
+      tabBarSelectedBackgroundColor: barFg.withValues(alpha: 0.15),
+      primaryColor: cs.primary,
+      onPrimaryColor: cs.onPrimary,
+      toolbarItems: [
+        textDecorationMobileToolbarItemV2,
+        buildTextAndBackgroundColorMobileToolbarItem(),
+        blocksMobileToolbarItem,
+        linkMobileToolbarItem,
+        dividerMobileToolbarItem,
+      ],
+      child: editor,
     );
   }
 
@@ -178,38 +217,6 @@ class MarkdownNoteEditorState extends State<MarkdownNoteEditor> {
           backgroundColor: isDark
               ? Colors.white.withAlpha(20)
               : Colors.grey.withAlpha(30),
-        ),
-      ),
-    );
-  }
-
-  Widget? _buildMobileToolbar(BuildContext context) {
-    if (!_isMobile) return null;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cs = Theme.of(context).colorScheme;
-
-    return SafeArea(
-      top: false,
-      child: Material(
-        color: isDark ? cs.surface : Colors.white,
-        child: MobileToolbar(
-          editorState: _editorState,
-          backgroundColor: isDark ? cs.surface : Colors.white,
-          foregroundColor: isDark ? Colors.white70 : const Color(0xff676666),
-          itemHighlightColor: cs.primary,
-          primaryColor: cs.primary,
-          onPrimaryColor: cs.onPrimary,
-          toolbarItems: [
-            textDecorationMobileToolbarItem,
-            headingMobileToolbarItem,
-            todoListMobileToolbarItem,
-            listMobileToolbarItem,
-            linkMobileToolbarItem,
-            quoteMobileToolbarItem,
-            codeMobileToolbarItem,
-            dividerMobileToolbarItem,
-          ],
         ),
       ),
     );

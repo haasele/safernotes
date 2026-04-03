@@ -29,16 +29,16 @@ bool isDocumentJson(String content) {
 
 Document plainTextToDocument(String text) {
   if (text.trim().isEmpty) {
-    return Document.blank();
+    return Document.blank(withInitialText: true);
   }
   try {
     final doc = markdownToDocument(text);
     if (doc.root.children.isEmpty) {
-      return Document.blank();
+      return Document.blank(withInitialText: true);
     }
     return doc;
   } catch (_) {
-    return Document.blank();
+    return Document.blank(withInitialText: true);
   }
 }
 
@@ -65,7 +65,7 @@ Document resolveDescription(String description, String contentFormat) {
     try {
       final doc = documentFromJson(description);
       if (doc.root.children.isEmpty) {
-        return Document.blank();
+        return Document.blank(withInitialText: true);
       }
       return doc;
     } catch (_) {

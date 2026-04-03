@@ -49,21 +49,42 @@ class AddEditNotePage extends StatefulWidget {
 class AddEditNotePageState extends State<AddEditNotePage> {
   final _formKey = GlobalKey<FormState>();
   final _editorKey = GlobalKey<MarkdownNoteEditorState>();
+  late final TextEditingController _titleController;
 
-  late String title;
   late String description;
   late String contentFormat;
+  Timer? _descriptionDebounce;
+
+  /// When true, [PopScope] must not auto-save (explicit Save already persisted).
+  bool _skipPopAutoSave = false;
 
   @override
   void initState() {
     super.initState();
-    title = widget.note?.title ?? '';
+    var t = widget.note?.title ?? '';
     description = widget.note?.description ?? '';
     contentFormat = widget.note?.contentFormat ?? 'plain';
-    title = title == ' ' ? '' : title;
+    t = t == ' ' ? '' : t;
     description = description == ' ' ? '' : description;
+    _titleController = TextEditingController(text: t);
     NoteEditorState.setSaveAttempted(false);
+    NoteEditorState.setState(
+      widget.note,
+      t,
+      description,
+      contentFormat: contentFormat,
+      noteType: widget.note?.noteType ?? widget.noteType,
+    );
   }
+
+  @override
+  void dispose() {
+    _descriptionDebounce?.cancel();
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  String get title => _titleController.text;
 
   Color? _noteColor(BuildContext context) {
     if (widget.note == null) return null;
@@ -74,6 +95,37 @@ class AddEditNotePageState extends State<AddEditNotePage> {
     );
   }
 
+  void _syncNoteEditorFromTitle() {
+    NoteEditorState.setState(
+      widget.note,
+      _titleController.text,
+      description,
+      contentFormat: 'document',
+      noteType: widget.note?.noteType ?? widget.noteType,
+    );
+  }
+
+  void _onDescriptionChanged(String newDescription) {
+    description = newDescription;
+    contentFormat = 'document';
+    NoteEditorState.setState(
+      widget.note,
+      _titleController.text,
+      description,
+      contentFormat: 'document',
+      noteType: widget.note?.noteType ?? widget.noteType,
+    );
+    _descriptionDebounce?.cancel();
+    _descriptionDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() {});
+    });
+  }
+
+  /// Updates static editor state only — no [setState] (keeps AppFlowy subtree stable).
+  void _onTitleChanged(String _) {
+    _syncNoteEditorFromTitle();
+  }
+
   @override
   Widget build(BuildContext context) {
     final bg = _noteColor(context);
@@ -81,7 +133,15 @@ class AddEditNotePageState extends State<AddEditNotePage> {
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, _) {
-        if (didPop && isNoteNewOrContentChanged()) {
+        if (!didPop || _skipPopAutoSave) return;
+        if (isNoteNewOrContentChanged()) {
+          NoteEditorState.setState(
+            widget.note,
+            _titleController.text,
+            _editorKey.currentState?.getSerializedContent() ?? description,
+            contentFormat: 'document',
+            noteType: widget.note?.noteType ?? widget.noteType,
+          );
           NoteEditorState().addOrUpdateNote();
         }
       },
@@ -90,7 +150,12 @@ class AddEditNotePageState extends State<AddEditNotePage> {
         resizeToAvoidBottomInset: true,
         appBar: AppBar(
           backgroundColor: bg ?? Theme.of(context).appBarTheme.backgroundColor,
-          actions: [buildButton()],
+          actions: [
+            ListenableBuilder(
+              listenable: _titleController,
+              builder: (context, _) => buildButton(),
+            ),
+          ],
         ),
         body: _buildBody(),
       ),
@@ -101,34 +166,20 @@ class AddEditNotePageState extends State<AddEditNotePage> {
     return Form(
       key: _formKey,
       child: NoteFormWidget(
-        title: title,
+        titleController: _titleController,
         description: description,
         contentFormat: contentFormat,
         sessionStateStream: widget.sessionStateStream,
         editorKey: _editorKey,
-        onChangedTitle: (title) => setState(() {
-          this.title = title;
-          NoteEditorState.setState(
-            widget.note, this.title, description,
-            contentFormat: 'document',
-            noteType: widget.note?.noteType ?? widget.noteType,
-          );
-        }),
-        onChangedDescription: (description) => setState(() {
-          this.description = description;
-          contentFormat = 'document';
-          NoteEditorState.setState(
-            widget.note, title, this.description,
-            contentFormat: 'document',
-            noteType: widget.note?.noteType ?? widget.noteType,
-          );
-        }),
+        onChangedTitle: _onTitleChanged,
+        onChangedDescription: _onDescriptionChanged,
       ),
     );
   }
 
   Widget buildButton() {
-    final isFormValid = title.isNotEmpty || description.isNotEmpty;
+    final isFormValid =
+        title.isNotEmpty || NoteEditorState.description.isNotEmpty;
     const double buttonFontSize = 17.0;
     final String buttonText = 'Save'.tr();
 
@@ -152,17 +203,27 @@ class AddEditNotePageState extends State<AddEditNotePage> {
   }
 
   Future<void> onSaveCallback() async {
-    var navigator = Navigator.of(context);
+    final navigator = Navigator.of(context);
+    NoteEditorState.setState(
+      widget.note,
+      _titleController.text,
+      _editorKey.currentState?.getSerializedContent() ?? description,
+      contentFormat: 'document',
+      noteType: widget.note?.noteType ?? widget.noteType,
+    );
     await NoteEditorState().addOrUpdateNote();
-    navigator.pop();
+    _skipPopAutoSave = true;
+    if (mounted) navigator.pop();
   }
 
   bool isNoteNewOrContentChanged() {
+    final body =
+        _editorKey.currentState?.getSerializedContent() ?? description;
     if (widget.note == null) {
-      if (title.isNotEmpty || description.isNotEmpty) return true;
+      if (title.isNotEmpty || body.isNotEmpty) return true;
     } else {
       if (widget.note?.title != title && title != '' ||
-          widget.note?.description != description && description != '') {
+          widget.note?.description != body && body != '') {
         return true;
       }
     }
